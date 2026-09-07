@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { useTargets } from "../../hooks/useTargets";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, toCsv } from "../../lib/csv";
@@ -7,14 +8,18 @@ import { todayStr } from "../../lib/dates";
 import type { UnitSystem } from "../../lib/units";
 import TdeeCalculator from "./TdeeCalculator";
 import ManualTargetForm from "./ManualTargetForm";
+import LiftLoginForm from "./LiftLoginForm";
 
 interface Props {
   unitSystem: UnitSystem;
   onUnitSystemChange: (u: UnitSystem) => void;
+  waterTarget: number;
+  onWaterTargetChange: (litres: number) => void;
 }
 
-export default function SettingsTab({ unitSystem, onUnitSystemChange }: Props) {
+export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarget, onWaterTargetChange }: Props) {
   const { user, signOut } = useAuth();
+  const { energyUnit, setEnergyUnit } = useEnergyUnit();
   const { currentTarget, addTarget } = useTargets();
   const [exporting, setExporting] = useState(false);
 
@@ -50,7 +55,7 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange }: Props) {
   }
 
   return (
-    <div>
+    <div className="tab-page">
       <h2 style={{ marginBottom: 16 }}>Settings</h2>
 
       <TdeeCalculator
@@ -87,6 +92,38 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange }: Props) {
           </button>
         </div>
       </div>
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <h3 style={{ marginBottom: 12 }}>Energy unit</h3>
+        <div className="range-toggle">
+          <button className={energyUnit === "kcal" ? "active" : ""} onClick={() => setEnergyUnit("kcal")}>
+            Calories (kcal)
+          </button>
+          <button className={energyUnit === "kj" ? "active" : ""} onClick={() => setEnergyUnit("kj")}>
+            Kilojoules (kJ)
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <h3 style={{ marginBottom: 12 }}>Water target</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <input
+            type="number"
+            step="0.1"
+            min="0.5"
+            value={waterTarget}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              if (!Number.isNaN(v) && v > 0) onWaterTargetChange(v);
+            }}
+            style={{ width: 90 }}
+          />
+          <span className="text-muted" style={{ fontSize: 13 }}>litres per day</span>
+        </div>
+      </div>
+
+      <LiftLoginForm />
 
       <div className="card" style={{ marginTop: 12 }}>
         <h3 style={{ marginBottom: 12 }}>Data export</h3>

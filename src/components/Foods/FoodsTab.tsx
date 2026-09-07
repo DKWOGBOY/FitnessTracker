@@ -4,7 +4,8 @@ import { useMealPresets } from "../../hooks/useMealPresets";
 import type { Food } from "../../lib/types";
 import FoodForm from "./FoodForm";
 import MealBuilder from "./MealBuilder";
-import { IconClose, IconStar } from "../icons";
+import { IconClose, IconPlus, IconStar } from "../icons";
+import Energy from "../Energy";
 
 type View = "foods" | "meals";
 
@@ -30,14 +31,14 @@ export default function FoodsTab() {
   }, [presets, query]);
 
   return (
-    <div>
+    <div className="tab-page">
       <div className="flex-between" style={{ marginBottom: 16 }}>
         <h2>Foods</h2>
         <button
           className="btn btn-primary"
           onClick={() => (view === "foods" ? setShowAdd(true) : setShowMealBuilder(true))}
         >
-          + {view === "foods" ? "Add" : "Create meal"}
+          <IconPlus className="icon" /> {view === "foods" ? "Add" : "Create meal"}
         </button>
       </div>
 
@@ -72,7 +73,7 @@ export default function FoodsTab() {
                 <div className="list-row-main">
                   <div className="list-row-title">{f.name}</div>
                   <div className="list-row-sub">
-                    {Math.round(f.calories)} kcal /100{f.serving_unit === "ml" ? "ml" : "g"} · P{" "}
+                    <Energy kcal={f.calories} /> /100{f.serving_unit === "ml" ? "ml" : "g"} · P{" "}
                     {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g ·{" "}
                     <span className="badge-muted badge">{f.source}</span>
                   </div>
@@ -112,11 +113,13 @@ export default function FoodsTab() {
                 <div className="list-row-title">{p.name}</div>
                 <div className="list-row-sub">
                   {p.items.length} item{p.items.length === 1 ? "" : "s"}
-                  {p.food
-                    ? ` · ${Math.round(p.food.calories)} kcal · P ${Math.round(p.food.protein_g)}g C ${Math.round(
-                        p.food.carbs_g,
-                      )}g F ${Math.round(p.food.fat_g)}g`
-                    : ""}
+                  {p.food && (
+                    <>
+                      {" · "}
+                      <Energy kcal={p.food.calories} /> · P {Math.round(p.food.protein_g)}g C{" "}
+                      {Math.round(p.food.carbs_g)}g F {Math.round(p.food.fat_g)}g
+                    </>
+                  )}
                 </div>
               </div>
               <div className="list-row-actions">

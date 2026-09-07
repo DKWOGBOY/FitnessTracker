@@ -8,6 +8,7 @@ import {
   type TdeeResult,
 } from "../../lib/tdee";
 import { lbToKg, inToCm, type UnitSystem } from "../../lib/units";
+import Energy from "../Energy";
 
 interface Props {
   unitSystem: UnitSystem;
@@ -105,10 +106,10 @@ export default function TdeeCalculator({ unitSystem, onApply }: Props) {
       {result && (
         <div className="card" style={{ background: "var(--color-surface-alt)", marginTop: 14 }}>
           <div className="text-muted" style={{ fontSize: 12, marginBottom: 8 }}>
-            BMR {result.bmr} kcal · TDEE {result.tdee} kcal
+            BMR <Energy kcal={result.bmr} /> · TDEE <Energy kcal={result.tdee} />
           </div>
           <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
-            {result.targetCalories} kcal / day
+            <Energy kcal={result.targetCalories} /> / day
           </div>
           <div className="text-muted" style={{ fontSize: 13, marginBottom: 12 }}>
             Protein {result.proteinG}g · Carbs {result.carbsG}g · Fat {result.fatG}g

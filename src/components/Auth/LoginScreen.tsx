@@ -49,7 +49,7 @@ export default function LoginScreen() {
     >
       <div className="card" style={{ width: "100%", maxWidth: 380 }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div className="app-header brand" style={{ justifyContent: "center", padding: 0 }}>
+          <div className="brand">
             bite<span>track</span>
           </div>
           <p className="text-muted" style={{ marginTop: 6, fontSize: 13 }}>

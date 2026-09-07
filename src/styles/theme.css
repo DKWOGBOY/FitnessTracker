@@ -16,6 +16,8 @@
   --color-protein: #9c5b3c;
   --color-carbs: #c78c3b;
   --color-fat: #7d8f5e;
+  --color-water: #2f7de1;
+  --color-water-soft: #dce9fb;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Segoe UI", system-ui, sans-serif;

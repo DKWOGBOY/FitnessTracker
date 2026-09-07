@@ -5,9 +5,10 @@ interface Props {
   color: string;
   size: number;
   thickness: number;
+  trackColor?: string;
 }
 
-export default function ProgressRing({ pct, color, size, thickness }: Props) {
+export default function ProgressRing({ pct, color, size, thickness, trackColor = "var(--color-bg-alt)" }: Props) {
   const clamped = Math.max(0, Math.min(100, pct));
   const data = [
     { key: "value", value: clamped },
@@ -31,7 +32,7 @@ export default function ProgressRing({ pct, color, size, thickness }: Props) {
         isAnimationActive={false}
       >
         <Cell key="value" fill={color} />
-        <Cell key="rest" fill="var(--color-bg-alt)" />
+        <Cell key="rest" fill={trackColor} />
       </Pie>
     </PieChart>
   );

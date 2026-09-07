@@ -68,33 +68,36 @@ export function IconFlame({ className }: IconProps) {
   );
 }
 
-export function IconBreakfast({ className }: IconProps) {
+export function IconChevronLeft({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">
-      <path d="M5 8h11v6.5A4.5 4.5 0 0 1 11.5 19h-2A4.5 4.5 0 0 1 5 14.5V8Z" />
-      <path d="M16 9.8h1.7a2.6 2.6 0 0 1 0 5.2H16" />
-      <path d="M8.5 4c-.6.9-.9 1.4 0 2.6M12 4c-.6.9-.9 1.4 0 2.6" />
+      <path d="M15 6l-6 6 6 6" />
     </svg>
   );
 }
 
-export function IconLunch({ className }: IconProps) {
+export function IconChevronRight({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">
-      <path d="M4.5 10.8a7.5 7.5 0 0 1 15 0Z" />
-      <path d="M3.5 10.8h17" />
-      <path d="M4.5 13.6h15" />
-      <path d="M5.5 16.4h13" />
+      <path d="M9 6l6 6-6 6" />
     </svg>
   );
 }
 
-export function IconDinner({ className }: IconProps) {
+export function IconCalendar({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">
-      <path d="M4 12h16a8 8 0 0 1-16 0Z" />
-      <path d="M12 12V4" />
-      <path d="M9.3 6.3c.7.6 1.1 1.2 1.1 2M14.7 6.3c-.7.6-1.1 1.2-1.1 2" />
+      <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+      <path d="M4 9.5h16M8 3.5v3M16 3.5v3" />
+    </svg>
+  );
+}
+
+export function IconWaterGlass({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M6.5 4.5h11l-1.4 14.3a1 1 0 0 1-1 .9H8.9a1 1 0 0 1-1-.9L6.5 4.5Z" />
+      <path d="M7.3 12.6c1.8-1.5 3.6-1.5 5.4 0s3.6 1.5 5.2 0" />
     </svg>
   );
 }
@@ -128,18 +131,6 @@ export function IconArrowLeft({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">
       <path d="M19 12H5M11 6l-6 6 6 6" />
-    </svg>
-  );
-}
-
-export function IconSnack({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="9.2" cy="9.8" r="0.9" style={{ fill: "currentColor" }} />
-      <circle cx="14.6" cy="9.2" r="0.9" style={{ fill: "currentColor" }} />
-      <circle cx="10.4" cy="14.6" r="0.9" style={{ fill: "currentColor" }} />
-      <circle cx="15" cy="13.8" r="0.9" style={{ fill: "currentColor" }} />
     </svg>
   );
 }

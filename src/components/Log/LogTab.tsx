@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useFoods } from "../../hooks/useFoods";
 import { useFoodLogs } from "../../hooks/useFoodLogs";
 import { useTargets } from "../../hooks/useTargets";
@@ -10,9 +9,10 @@ import DateNav from "./DateNav";
 import DailySummary from "./DailySummary";
 import MealSection from "./MealSection";
 import WeightCard from "./WeightCard";
+import WaterTracker from "./WaterTracker";
+import ExerciseCard from "./ExerciseCard";
 import PresetBar from "./PresetBar";
 import FoodSearchModal from "./FoodSearchModal";
-import SavePresetModal from "./SavePresetModal";
 
 interface Props {
   unitSystem: UnitSystem;
@@ -20,15 +20,21 @@ interface Props {
   onDateChange: (date: string) => void;
   modalMeal: Meal | null;
   onModalMealChange: (meal: Meal | null) => void;
+  waterTarget: number;
 }
 
-export default function LogTab({ unitSystem, date, onDateChange, modalMeal, onModalMealChange }: Props) {
-  const [presetMeal, setPresetMeal] = useState<Meal | null>(null);
-
+export default function LogTab({
+  unitSystem,
+  date,
+  onDateChange,
+  modalMeal,
+  onModalMealChange,
+  waterTarget,
+}: Props) {
   const { foods, refresh: refreshFoods } = useFoods();
   const { logs, addLog, updateLog, deleteLog } = useFoodLogs(date);
   const { targetForDate } = useTargets();
-  const { presets, savePreset, deletePreset } = useMealPresets();
+  const { presets, deletePreset } = useMealPresets();
   const { streak } = useStreak(logs.length);
 
   const consumed = sumMacros(logs.map((l) => macrosForQuantity(l.food, l.quantity)));
@@ -41,28 +47,27 @@ export default function LogTab({ unitSystem, date, onDateChange, modalMeal, onMo
 
   return (
     <div>
-      <DateNav date={date} onChange={onDateChange} />
+      <DailySummary consumed={consumed} target={target} streak={streak} />
 
-      <div style={{ marginTop: 12 }}>
-        <DailySummary consumed={consumed} target={target} streak={streak} />
-      </div>
+      <DateNav date={date} onChange={onDateChange} />
 
       <PresetBar presets={presets} onQuickAdd={handleQuickAddPreset} onDelete={deletePreset} />
 
-      <div className="section-title" style={{ marginTop: 0 }}>
-        Food log
-      </div>
+      <WaterTracker date={date} target={waterTarget} />
+
       {MEALS.map((meal) => (
         <MealSection
           key={meal}
           meal={meal}
           logs={logs.filter((l) => l.meal === meal)}
           onAddClick={() => onModalMealChange(meal)}
-          onEditQuantity={(id, qty) => updateLog(id, { quantity: qty })}
+          onEditLog={(id, changes) => updateLog(id, changes)}
           onDelete={deleteLog}
-          onSaveAsPreset={() => setPresetMeal(meal)}
         />
       ))}
+
+      <div className="section-title">Exercise</div>
+      <ExerciseCard date={date} />
 
       <div className="section-title">Weight</div>
       <WeightCard date={date} unitSystem={unitSystem} />
@@ -78,22 +83,6 @@ export default function LogTab({ unitSystem, date, onDateChange, modalMeal, onMo
           }}
           onFoodCreated={() => refreshFoods()}
           onDeletePreset={deletePreset}
-        />
-      )}
-
-      {presetMeal && (
-        <SavePresetModal
-          meal={presetMeal}
-          logs={logs.filter((l) => l.meal === presetMeal)}
-          onClose={() => setPresetMeal(null)}
-          onSave={async (name) => {
-            const mealLogs = logs.filter((l) => l.meal === presetMeal);
-            await savePreset(
-              name,
-              presetMeal,
-              mealLogs.map((l) => ({ foodId: l.food_id, quantity: l.quantity })),
-            );
-          }}
         />
       )}
     </div>

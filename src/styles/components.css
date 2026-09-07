@@ -221,11 +221,6 @@ textarea:focus {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.list-row:last-child {
-  border-bottom: none;
 }
 
 .list-row-main {
@@ -286,26 +281,74 @@ textarea:focus {
   border-radius: 50%;
 }
 
-.calorie-hero-remaining {
-  font-size: 13px;
+.summary-hero {
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff8f2;
+  margin: 0 -16px 20px;
+  padding: 20px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-bottom-left-radius: 50% 26px;
+  border-bottom-right-radius: 50% 26px;
+}
+
+.summary-hero-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-muted);
-  white-space: nowrap;
+  margin-bottom: 16px;
 }
 
-.calorie-ring-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 0 20px;
+.summary-hero-value {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.calorie-ring-caption {
+.summary-hero-unit {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.summary-hero-caption {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.92;
+  margin-top: 12px;
+}
+
+.summary-hero .macro-ring-row {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.summary-hero-macro-value {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.summary-hero-macro-label {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
 }
 
 .ring-wrap {
@@ -326,19 +369,6 @@ textarea:focus {
   text-align: center;
 }
 
-.ring-value {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.ring-unit {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-
 .macro-ring-row {
   display: flex;
   justify-content: space-between;
@@ -353,63 +383,202 @@ textarea:focus {
   flex: 1;
 }
 
-.macro-ring-value {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.macro-ring-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.meal-row-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.meal-row-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.meal-row-title h3 {
-  font-size: 15px;
-}
-
-.meal-icon-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+.date-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  gap: 18px;
+  margin: 20px 0;
 }
 
-.meal-icon-badge .icon {
-  width: 17px;
-  height: 17px;
+.date-nav-arrow {
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
 }
 
-.meal-row-actions {
+.date-nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.date-nav-arrow .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
+
+.date-nav-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.date-nav-label .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-muted);
+}
+
+.date-nav-label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.water-tracker {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.water-tracker-icon {
+  display: flex;
   flex-shrink: 0;
+  color: var(--color-water);
+}
+
+.water-tracker-icon .icon {
+  width: 19px;
+  height: 19px;
+}
+
+.water-tracker-bar-wrap {
+  position: relative;
+  flex: 1;
+  height: 15px;
+  background: var(--color-water-soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.water-tracker-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--color-water);
+  border-radius: 999px;
+  transition: width 0.15s ease;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.water-bubble {
+  position: absolute;
+  bottom: -6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  animation: water-bubble-rise 3s ease-in infinite;
+  opacity: 0;
+}
+
+@keyframes water-bubble-rise {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-20px) scale(1);
+    opacity: 0;
+  }
+}
+
+.water-tracker-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.water-tracker-count {
+  flex-shrink: 0;
+  min-width: 54px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.meal-macro-line {
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.meal-macro-line b {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-row-delete {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 72px;
+  border: none;
+  background: var(--color-danger);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 0;
+}
+
+.swipe-row-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: var(--color-surface);
+  touch-action: pan-y;
+  cursor: pointer;
+}
+
+.log-row {
+  padding: 10px 0;
+  margin-right: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.log-row-title {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-row-kcal {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .btn-pill {
@@ -425,6 +594,12 @@ textarea:focus {
 .btn-pill:hover {
   background: var(--color-primary);
   color: #fff8f2;
+}
+
+.btn-pill-icon {
+  padding: 8px;
+  width: 32px;
+  height: 32px;
 }
 
 .screen-overlay {

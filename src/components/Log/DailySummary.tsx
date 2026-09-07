@@ -1,5 +1,7 @@
 import type { Macros, Target } from "../../lib/types";
 import { IconFlame } from "../icons";
+import { useEnergyUnit } from "../../context/EnergyUnitContext";
+import { energyUnitLabel, formatEnergy } from "../../lib/energy";
 import ProgressRing from "./ProgressRing";
 
 interface Props {
@@ -8,15 +10,17 @@ interface Props {
   streak: number;
 }
 
+const RING_TRACK = "rgba(255, 255, 255, 0.28)";
+
 function MacroRing({
   label,
-  color,
+  dotColor,
   consumed,
   target,
   unit,
 }: {
   label: string;
-  color: string;
+  dotColor: string;
   consumed: number;
   target: number | null;
   unit: string;
@@ -24,93 +28,79 @@ function MacroRing({
   const pct = target ? (consumed / target) * 100 : 0;
   return (
     <div className="macro-ring">
-      <div className="ring-wrap" style={{ width: 76, height: 76 }}>
-        <ProgressRing pct={pct} color={color} size={76} thickness={8} />
+      <div className="ring-wrap" style={{ width: 72, height: 72 }}>
+        <ProgressRing pct={pct} color="#fff" trackColor={RING_TRACK} size={72} thickness={7} />
         <div className="ring-center">
-          <span className="macro-ring-value">
+          <span className="summary-hero-macro-value">
             {Math.round(consumed)}
             {unit}
           </span>
         </div>
       </div>
-      <span className="macro-ring-label">
-        <span className="macro-dot" style={{ background: color }} />
+      <span className="summary-hero-macro-label">
+        <span className="macro-dot" style={{ background: dotColor }} />
         {label}
-      </span>
-      <span className="text-muted" style={{ fontSize: 11 }}>
-        {target ? `/ ${Math.round(target)}${unit}` : "no target"}
       </span>
     </div>
   );
 }
 
 export default function DailySummary({ consumed, target, streak }: Props) {
+  const { energyUnit } = useEnergyUnit();
+  const unitLabel = energyUnitLabel(energyUnit);
   const calorieTarget = target?.calories ?? null;
   const calorieConsumed = consumed.calories;
-  const remaining = calorieTarget !== null ? Math.round(calorieTarget - calorieConsumed) : null;
+  const remaining = calorieTarget !== null ? calorieTarget - calorieConsumed : null;
   const pct = calorieTarget ? (calorieConsumed / calorieTarget) * 100 : 0;
 
   return (
-    <div className="card">
-      <div className="flex-between" style={{ marginBottom: 14 }}>
-        <h3>Today's summary</h3>
-        {streak > 0 && (
-          <span className="badge" style={{ gap: 5 }}>
-            <IconFlame className="icon" />
-            {streak} day{streak === 1 ? "" : "s"}
-          </span>
-        )}
+    <div className="summary-hero">
+      {streak > 0 && (
+        <span className="summary-hero-streak">
+          <IconFlame className="icon" />
+          {streak} day{streak === 1 ? "" : "s"} streak
+        </span>
+      )}
+
+      <div className="ring-wrap" style={{ width: 152, height: 152 }}>
+        <ProgressRing pct={pct} color="#fff" trackColor={RING_TRACK} size={152} thickness={13} />
+        <div className="ring-center">
+          <span className="summary-hero-value">{formatEnergy(calorieConsumed, energyUnit)}</span>
+          <span className="summary-hero-unit">{unitLabel} eaten</span>
+        </div>
       </div>
 
-      <div className="calorie-ring-block">
-        <div className="ring-wrap" style={{ width: 140, height: 140 }}>
-          <ProgressRing pct={pct} color="var(--color-primary)" size={140} thickness={14} />
-          <div className="ring-center">
-            <span className="ring-value">{Math.round(calorieConsumed)}</span>
-            <span className="ring-unit">kcal</span>
-          </div>
-        </div>
-        <div className="calorie-ring-caption">
-          <span className="text-muted" style={{ fontSize: 13 }}>
-            {calorieTarget !== null ? `of ${Math.round(calorieTarget)} kcal target` : "No target set"}
-          </span>
-          {remaining !== null && (
-            <div className="calorie-hero-remaining">
-              {remaining >= 0 ? `${remaining} left` : `${Math.abs(remaining)} over`}
-            </div>
-          )}
-        </div>
+      <div className="summary-hero-caption">
+        {calorieTarget !== null
+          ? remaining !== null && remaining < 0
+            ? `${formatEnergy(Math.abs(remaining), energyUnit)} ${unitLabel} over your ${formatEnergy(calorieTarget, energyUnit)} target`
+            : `${formatEnergy(remaining ?? 0, energyUnit)} ${unitLabel} left of ${formatEnergy(calorieTarget, energyUnit)}`
+          : "No target set — head to Settings"}
       </div>
 
       <div className="macro-ring-row">
         <MacroRing
           label="Protein"
-          color="var(--color-protein)"
+          dotColor="var(--color-protein)"
           consumed={consumed.protein_g}
           target={target?.protein_g ?? null}
           unit="g"
         />
         <MacroRing
           label="Carbs"
-          color="var(--color-carbs)"
+          dotColor="var(--color-carbs)"
           consumed={consumed.carbs_g}
           target={target?.carbs_g ?? null}
           unit="g"
         />
         <MacroRing
           label="Fat"
-          color="var(--color-fat)"
+          dotColor="var(--color-fat)"
           consumed={consumed.fat_g}
           target={target?.fat_g ?? null}
           unit="g"
         />
       </div>
-
-      {!target && (
-        <p className="text-muted" style={{ fontSize: 12, marginTop: 14, textAlign: "center" }}>
-          No targets set yet — head to Settings to run the TDEE calculator.
-        </p>
-      )}
     </div>
   );
 }

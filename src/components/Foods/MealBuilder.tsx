@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { MEALS, macrosForQuantity, type Food, type FoodInput, type Meal } from "../../lib/types";
-import { IconArrowLeft, IconClose } from "../icons";
+import { IconArrowLeft, IconClose, IconPlus } from "../icons";
+import Energy from "../Energy";
 import FoodForm from "./FoodForm";
 
 interface Props {
@@ -109,7 +110,9 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
 
         <div className="card" style={{ background: "var(--color-surface-alt)", marginBottom: 16 }}>
           <div className="flex-between">
-            <strong>{Math.round(totals.calories)} kcal</strong>
+            <strong>
+              <Energy kcal={totals.calories} />
+            </strong>
             <span className="text-muted" style={{ fontSize: 12 }}>
               P {Math.round(totals.protein_g)}g · C {Math.round(totals.carbs_g)}g · F{" "}
               {Math.round(totals.fat_g)}g
@@ -130,7 +133,7 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
                 <div className="list-row-main">
                   <div className="list-row-title">{item.food.name}</div>
                   <div className="list-row-sub">
-                    {Math.round(m.calories)} kcal · P {Math.round(m.protein_g)}g C {Math.round(m.carbs_g)}g F{" "}
+                    <Energy kcal={m.calories} /> · P {Math.round(m.protein_g)}g C {Math.round(m.carbs_g)}g F{" "}
                     {Math.round(m.fat_g)}g
                   </div>
                 </div>
@@ -154,10 +157,10 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
 
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           <button className="btn btn-secondary btn-block" onClick={() => setPickerOpen(true)}>
-            + Add food
+            <IconPlus className="icon" /> Add food
           </button>
           <button className="btn btn-secondary btn-block" onClick={() => setShowCustomForm(true)}>
-            + Custom macros
+            <IconPlus className="icon" /> Custom macros
           </button>
         </div>
 
@@ -198,12 +201,12 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
                   <div className="list-row-main">
                     <div className="list-row-title">{f.name}</div>
                     <div className="list-row-sub">
-                      {Math.round(f.calories)} kcal /100{f.serving_unit === "ml" ? "ml" : "g"}
+                      <Energy kcal={f.calories} /> /100{f.serving_unit === "ml" ? "ml" : "g"}
                     </div>
                   </div>
                   <div className="list-row-actions">
                     <button className="btn btn-primary btn-icon" tabIndex={-1}>
-                      +
+                      <IconPlus className="icon" />
                     </button>
                   </div>
                 </div>

@@ -1,14 +1,17 @@
-import { useState, type JSX } from "react";
+import { useState } from "react";
+import { format, parseISO } from "date-fns";
 import { macrosForQuantity, sumMacros, type FoodLogWithFood, type Meal } from "../../lib/types";
-import { IconBreakfast, IconCheck, IconClose, IconDinner, IconLunch, IconSnack, IconStar } from "../icons";
+import { IconPlus } from "../icons";
+import Energy from "../Energy";
+import SwipeableRow from "./SwipeableRow";
+import EditLogModal from "./EditLogModal";
 
 interface Props {
   meal: Meal;
   logs: FoodLogWithFood[];
   onAddClick: () => void;
-  onEditQuantity: (id: string, quantity: number) => Promise<void>;
+  onEditLog: (id: string, changes: { quantity: number; created_at: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onSaveAsPreset: () => void;
 }
 
 const MEAL_LABELS: Record<Meal, string> = {
@@ -18,117 +21,79 @@ const MEAL_LABELS: Record<Meal, string> = {
   snack: "Snacks",
 };
 
-const MEAL_ICONS: Record<Meal, (props: { className?: string }) => JSX.Element> = {
-  breakfast: IconBreakfast,
-  lunch: IconLunch,
-  dinner: IconDinner,
-  snack: IconSnack,
-};
-
-export default function MealSection({
-  meal,
-  logs,
-  onAddClick,
-  onEditQuantity,
-  onDelete,
-  onSaveAsPreset,
-}: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
+export default function MealSection({ meal, logs, onAddClick, onEditLog, onDelete }: Props) {
+  const [editingLog, setEditingLog] = useState<FoodLogWithFood | null>(null);
 
   const totals = sumMacros(logs.map((l) => macrosForQuantity(l.food, l.quantity)));
 
-  function startEdit(id: string, quantity: number) {
-    setEditingId(id);
-    setEditValue(String(quantity));
+  if (logs.length === 0) {
+    return (
+      <div className="card">
+        <div className="flex-between">
+          <h3>{MEAL_LABELS[meal]}</h3>
+          <button className="btn btn-pill btn-pill-icon" onClick={onAddClick} aria-label="Add">
+            <IconPlus className="icon" />
+          </button>
+        </div>
+      </div>
+    );
   }
-
-  async function saveEdit(id: string) {
-    const qty = parseFloat(editValue);
-    if (!Number.isNaN(qty) && qty > 0) {
-      await onEditQuantity(id, qty);
-    }
-    setEditingId(null);
-  }
-
-  const MealIcon = MEAL_ICONS[meal];
 
   return (
     <div className="card">
-      <div className="meal-row-header" style={{ marginBottom: logs.length ? 8 : 0 }}>
-        <div className="meal-row-title">
-          <span className="meal-icon-badge">
-            <MealIcon className="icon" />
-          </span>
-          <div>
-            <h3>{MEAL_LABELS[meal]}</h3>
-            {logs.length > 0 && (
-              <span className="text-muted" style={{ fontSize: 12 }}>
-                {Math.round(totals.calories)} kcal
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="meal-row-actions">
-          {logs.length > 0 && (
-            <button className="btn btn-ghost" onClick={onSaveAsPreset} title="Save as preset">
-              <IconStar className="icon icon-star" filled />
-            </button>
-          )}
-          <button className="btn btn-pill" onClick={onAddClick}>
-            Add
-          </button>
-        </div>
+      <div className="flex-between">
+        <h3>{MEAL_LABELS[meal]}</h3>
+        <strong>
+          <Energy kcal={totals.calories} />
+        </strong>
+      </div>
+      <div className="meal-macro-line">
+        <span>
+          <b>C</b> {Math.round(totals.carbs_g)}g
+        </span>
+        <span>
+          <b>F</b> {Math.round(totals.fat_g)}g
+        </span>
+        <span>
+          <b>P</b> {Math.round(totals.protein_g)}g
+        </span>
       </div>
 
       {logs.map((log) => {
         const m = macrosForQuantity(log.food, log.quantity);
         return (
-          <div className="list-row" key={log.id}>
-            <div className="list-row-main">
-              <div className="list-row-title">{log.food.name}</div>
-              {editingId === log.id ? (
-                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    style={{ width: 70, padding: "4px 8px" }}
-                  />
-                  <button className="btn btn-primary" style={{ padding: "4px 10px" }} onClick={() => saveEdit(log.id)}>
-                    <IconCheck className="icon" />
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ padding: "4px 10px" }}
-                    onClick={() => setEditingId(null)}
-                  >
-                    <IconClose className="icon" />
-                  </button>
-                </div>
-              ) : (
-                <div className="list-row-sub">
-                  {log.quantity}× serving · {Math.round(m.calories)} kcal · P{" "}
-                  {Math.round(m.protein_g)}g C {Math.round(m.carbs_g)}g F {Math.round(m.fat_g)}g
-                </div>
-              )}
-            </div>
-            {editingId !== log.id && (
-              <div className="list-row-actions">
-                <button className="btn btn-ghost" onClick={() => startEdit(log.id, log.quantity)}>
-                  Edit
-                </button>
-                <button className="btn btn-ghost" onClick={() => onDelete(log.id)}>
-                  <IconClose className="icon" />
-                </button>
+          <SwipeableRow key={log.id} onTap={() => setEditingLog(log)} onDelete={() => onDelete(log.id)}>
+            <div className="log-row">
+              <div className="flex-between" style={{ gap: 8 }}>
+                <span className="log-row-title" style={{ minWidth: 0, flex: 1 }}>
+                  {log.food.name}
+                </span>
+                <span className="log-row-kcal">
+                  <Energy kcal={m.calories} withUnit={false} />
+                </span>
               </div>
-            )}
-          </div>
+              <div className="list-row-sub">
+                {format(parseISO(log.created_at), "h:mm a")} · {log.quantity}× serving
+              </div>
+            </div>
+          </SwipeableRow>
         );
       })}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+        <button className="btn btn-pill btn-pill-icon" onClick={onAddClick} aria-label="Add">
+          <IconPlus className="icon" />
+        </button>
+      </div>
+
+      {editingLog && (
+        <EditLogModal
+          log={editingLog}
+          onClose={() => setEditingLog(null)}
+          onSave={(changes) => onEditLog(editingLog.id, changes)}
+          onDelete={() => onDelete(editingLog.id)}
+        />
+      )}
     </div>
   );
 }

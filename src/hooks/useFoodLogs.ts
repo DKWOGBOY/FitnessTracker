@@ -41,7 +41,7 @@ export function useFoodLogs(date: string) {
     await refresh();
   }
 
-  async function updateLog(id: string, changes: { quantity?: number; meal?: Meal }) {
+  async function updateLog(id: string, changes: { quantity?: number; meal?: Meal; created_at?: string }) {
     const { error: err } = await supabase.from("food_logs").update(changes).eq("id", id);
     if (err) throw err;
     await refresh();

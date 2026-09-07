@@ -54,26 +54,23 @@ a {
   padding-bottom: 104px;
 }
 
-.app-header {
-  padding: 20px 20px 12px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.app-main {
+  flex: 1;
+  padding: 0 16px 24px;
 }
 
-.app-header .brand {
+.tab-page {
+  padding-top: 20px;
+}
+
+.brand {
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-.app-header .brand span {
+.brand span {
   color: var(--color-primary);
-}
-
-.app-main {
-  flex: 1;
-  padding: 0 16px 24px;
 }
 
 .bottom-bar {

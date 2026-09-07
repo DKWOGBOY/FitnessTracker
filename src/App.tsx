@@ -1,5 +1,7 @@
 import { useState, type JSX } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LiftAuthProvider } from "./context/LiftAuthContext";
+import { EnergyUnitProvider } from "./context/EnergyUnitContext";
 import LoginScreen from "./components/Auth/LoginScreen";
 import LogTab from "./components/Log/LogTab";
 import TrendsTab from "./components/Trends/TrendsTab";
@@ -7,6 +9,7 @@ import FoodsTab from "./components/Foods/FoodsTab";
 import SettingsTab from "./components/Settings/SettingsTab";
 import { IconLog, IconTrends, IconFoods, IconSettings, IconPlus } from "./components/icons";
 import { getStoredUnitSystem, setStoredUnitSystem, type UnitSystem } from "./lib/units";
+import { getStoredWaterTarget, setStoredWaterTarget } from "./lib/waterTarget";
 import { todayStr } from "./lib/dates";
 import type { Meal } from "./lib/types";
 
@@ -22,12 +25,18 @@ const TABS: { key: Tab; label: string; Icon: (props: { className?: string }) => 
 function AppShell() {
   const [tab, setTab] = useState<Tab>("log");
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(getStoredUnitSystem());
+  const [waterTarget, setWaterTarget] = useState(getStoredWaterTarget());
   const [logDate, setLogDate] = useState(todayStr());
   const [modalMeal, setModalMeal] = useState<Meal | null>(null);
 
   function handleUnitSystemChange(u: UnitSystem) {
     setUnitSystem(u);
     setStoredUnitSystem(u);
+  }
+
+  function handleWaterTargetChange(litres: number) {
+    setWaterTarget(litres);
+    setStoredWaterTarget(litres);
   }
 
   function handleQuickAdd() {
@@ -38,12 +47,6 @@ function AppShell() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="brand">
-          bite<span>track</span>
-        </div>
-      </header>
-
       <main className="app-main">
         {tab === "log" && (
           <LogTab
@@ -52,12 +55,18 @@ function AppShell() {
             onDateChange={setLogDate}
             modalMeal={modalMeal}
             onModalMealChange={setModalMeal}
+            waterTarget={waterTarget}
           />
         )}
         {tab === "trends" && <TrendsTab unitSystem={unitSystem} />}
         {tab === "foods" && <FoodsTab />}
         {tab === "settings" && (
-          <SettingsTab unitSystem={unitSystem} onUnitSystemChange={handleUnitSystemChange} />
+          <SettingsTab
+            unitSystem={unitSystem}
+            onUnitSystemChange={handleUnitSystemChange}
+            waterTarget={waterTarget}
+            onWaterTargetChange={handleWaterTargetChange}
+          />
         )}
       </main>
 
@@ -104,7 +113,11 @@ function Gate() {
 export default function App() {
   return (
     <AuthProvider>
-      <Gate />
+      <LiftAuthProvider>
+        <EnergyUnitProvider>
+          <Gate />
+        </EnergyUnitProvider>
+      </LiftAuthProvider>
     </AuthProvider>
   );
 }

@@ -8,7 +8,8 @@ import {
 } from "../../lib/foodApi";
 import { useFoodLogHistory, type FoodHistoryEntry } from "../../hooks/useFoodLogHistory";
 import { MEALS, macrosForQuantity, type Food, type Meal, type MealPresetWithItems } from "../../lib/types";
-import { IconArrowLeft, IconCheck, IconChevronDown, IconClose, IconSearch, IconStar } from "../icons";
+import { IconArrowLeft, IconCheck, IconChevronDown, IconClose, IconPlus, IconSearch, IconStar } from "../icons";
+import Energy from "../Energy";
 
 interface Props {
   foods: Food[];
@@ -300,13 +301,13 @@ export default function FoodSearchModal({
                         </span>
                       </div>
                       <div className="list-row-sub">
-                        {Math.round(c.calories)} kcal /100{c.serving_unit === "ml" ? "ml" : "g"} · P{" "}
+                        <Energy kcal={c.calories} /> /100{c.serving_unit === "ml" ? "ml" : "g"} · P{" "}
                         {Math.round(c.protein_g)}g C {Math.round(c.carbs_g)}g F {Math.round(c.fat_g)}g
                       </div>
                     </div>
                     <div className="list-row-actions">
                       <button className="btn btn-primary btn-icon" onClick={() => pickCandidate(c)}>
-                        +
+                        <IconPlus className="icon" />
                       </button>
                     </div>
                   </div>
@@ -383,13 +384,15 @@ export default function FoodSearchModal({
 
             <p className="text-muted" style={{ fontSize: 12, marginBottom: 14 }}>
               Serving: {detailFood.serving_size}
-              {detailFood.serving_unit} • {detailFood.calories} kcal /100
+              {detailFood.serving_unit} • <Energy kcal={detailFood.calories} /> /100
               {detailFood.serving_unit === "ml" ? "ml" : "g"}
             </p>
 
             <div className="card" style={{ background: "var(--color-surface-alt)", marginBottom: 16 }}>
               <div className="flex-between">
-                <strong>{Math.round(detailMacros.calories)} kcal</strong>
+                <strong>
+                  <Energy kcal={detailMacros.calories} />
+                </strong>
                 <span className="text-muted" style={{ fontSize: 12 }}>
                   P {Math.round(detailMacros.protein_g)}g · C {Math.round(detailMacros.carbs_g)}g · F{" "}
                   {Math.round(detailMacros.fat_g)}g
@@ -424,7 +427,7 @@ function HistoryRow({
       <div className="list-row-main">
         <div className="list-row-title">{entry.food.name}</div>
         <div className="list-row-sub">
-          {Math.round(macros.calories)} kcal · {entry.lastQuantity}× serving
+          <Energy kcal={macros.calories} /> · {entry.lastQuantity}× serving
         </div>
       </div>
       <div className="list-row-actions">
@@ -436,7 +439,7 @@ function HistoryRow({
           }}
           aria-label="Quick add"
         >
-          {added ? <IconCheck className="icon" /> : "+"}
+          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
         </button>
       </div>
     </div>
@@ -466,7 +469,7 @@ function FoodRow({
           )}
         </div>
         <div className="list-row-sub">
-          {Math.round(food.calories)} kcal /100{food.serving_unit === "ml" ? "ml" : "g"}
+          <Energy kcal={food.calories} /> /100{food.serving_unit === "ml" ? "ml" : "g"}
         </div>
       </div>
       <div className="list-row-actions">
@@ -478,7 +481,7 @@ function FoodRow({
           }}
           aria-label="Quick add"
         >
-          {added ? <IconCheck className="icon" /> : "+"}
+          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
         </button>
       </div>
     </div>
@@ -504,7 +507,12 @@ function PresetRow({
         <div className="list-row-title">{preset.name}</div>
         <div className="list-row-sub">
           {preset.items.length} item{preset.items.length === 1 ? "" : "s"}
-          {preset.food ? ` · ${Math.round(preset.food.calories)} kcal` : ""}
+          {preset.food && (
+            <>
+              {" · "}
+              <Energy kcal={preset.food.calories} />
+            </>
+          )}
         </div>
       </div>
       <div className="list-row-actions">
@@ -526,7 +534,7 @@ function PresetRow({
           }}
           aria-label="Quick add"
         >
-          {added ? <IconCheck className="icon" /> : "+"}
+          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
         </button>
       </div>
     </div>

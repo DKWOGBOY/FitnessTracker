@@ -12,8 +12,8 @@ export function shiftDate(dateStr: string, days: number): string {
 
 export function formatDateLabel(dateStr: string): string {
   const d = parseISO(dateStr);
-  if (isTodayFns(d)) return "Today";
-  if (isYesterday(d)) return "Yesterday";
+  if (isTodayFns(d)) return `Today, ${format(d, "d MMM")}`;
+  if (isYesterday(d)) return `Yesterday, ${format(d, "d MMM")}`;
   return format(d, "EEE d MMM");
 }
 
