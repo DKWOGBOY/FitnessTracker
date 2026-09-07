@@ -3,12 +3,16 @@ import { IconClose } from "../icons";
 
 const REVEAL_WIDTH = 72;
 const OPEN_THRESHOLD = REVEAL_WIDTH / 2;
-const TAP_THRESHOLD = 6;
+const LOCK_THRESHOLD = 6;
+
+type LockDirection = "none" | "horizontal" | "vertical";
 
 interface DragState {
+  pointerId: number;
   startX: number;
+  startY: number;
   baseOffset: number;
-  moved: boolean;
+  lock: LockDirection;
 }
 
 interface Props {
@@ -19,31 +23,57 @@ interface Props {
 
 export default function SwipeableRow({ onTap, onDelete, children }: Props) {
   const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const dragState = useRef<DragState | null>(null);
 
   function handlePointerDown(e: PointerEvent) {
-    dragState.current = { startX: e.clientX, baseOffset: offset, moved: false };
+    if (dragState.current) return;
+    dragState.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      baseOffset: offset,
+      lock: "none",
+    };
   }
 
   function handlePointerMove(e: PointerEvent) {
     const drag = dragState.current;
-    if (!drag) return;
-    const delta = e.clientX - drag.startX;
-    if (Math.abs(delta) > TAP_THRESHOLD) drag.moved = true;
-    setOffset(Math.max(-REVEAL_WIDTH, Math.min(0, drag.baseOffset + delta)));
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    if (drag.lock === "vertical") return;
+
+    const deltaX = e.clientX - drag.startX;
+    const deltaY = e.clientY - drag.startY;
+
+    if (drag.lock === "none") {
+      if (Math.abs(deltaX) < LOCK_THRESHOLD && Math.abs(deltaY) < LOCK_THRESHOLD) return;
+      drag.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+      if (drag.lock === "horizontal") {
+        setDragging(true);
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } else {
+        return;
+      }
+    }
+
+    setOffset(Math.max(-REVEAL_WIDTH, Math.min(0, drag.baseOffset + deltaX)));
   }
 
-  function handlePointerUp() {
+  function endDrag(e: PointerEvent) {
     const drag = dragState.current;
     dragState.current = null;
-    if (!drag) return;
+    setDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    if (!drag || drag.pointerId !== e.pointerId) return;
 
-    if (!drag.moved) {
-      if (drag.baseOffset !== 0) {
-        setOffset(0);
-      } else {
-        onTap();
-      }
+    if (drag.lock === "vertical") return; // was a page scroll, leave the row exactly as it was
+
+    if (drag.lock === "none") {
+      // a clean tap: close if already revealed, otherwise open the editor
+      if (drag.baseOffset !== 0) setOffset(0);
+      else onTap();
       return;
     }
 
@@ -56,12 +86,12 @@ export default function SwipeableRow({ onTap, onDelete, children }: Props) {
         <IconClose className="icon" />
       </button>
       <div
-        className="swipe-row-content"
-        style={offset === 0 ? undefined : { transform: `translateX(${offset}px)` }}
+        className={`swipe-row-content${dragging ? "" : " snap"}`}
+        style={{ transform: offset === 0 ? undefined : `translateX(${offset}px)` }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
       >
         {children}
       </div>

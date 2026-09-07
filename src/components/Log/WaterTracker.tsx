@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useWaterLog } from "../../hooks/useWaterLog";
 import { IconWaterGlass } from "../icons";
 
@@ -15,11 +15,14 @@ interface Bubble {
 }
 
 const BUBBLE_COUNT = 8;
+const STEP = 0.1;
 
 export default function WaterTracker({ date, target }: Props) {
   const { litres, setLitres } = useWaterLog(date);
   const [value, setValue] = useState(litres);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
 
   const bubbles = useMemo<Bubble[]>(
     () =>
@@ -43,11 +46,39 @@ export default function WaterTracker({ date, target }: Props) {
   }, []);
 
   function handleChange(next: number) {
-    setValue(next);
+    const clamped = Math.max(0, Math.min(target, next));
+    setValue(clamped);
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
-      setLitres(next);
+      setLitres(clamped);
     }, 300);
+  }
+
+  function valueFromClientX(clientX: number): number {
+    const el = barRef.current;
+    if (!el) return value;
+    const rect = el.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const raw = pct * target;
+    return Math.round(raw / STEP) * STEP;
+  }
+
+  function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handleChange(valueFromClientX(e.clientX));
+  }
+
+  function handlePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    handleChange(valueFromClientX(e.clientX));
+  }
+
+  function handlePointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    draggingRef.current = false;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   }
 
   const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0;
@@ -57,7 +88,14 @@ export default function WaterTracker({ date, target }: Props) {
       <span className="water-tracker-icon">
         <IconWaterGlass className="icon" />
       </span>
-      <div className="water-tracker-bar-wrap">
+      <div
+        className="water-tracker-bar-wrap"
+        ref={barRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
         <div className="water-tracker-bar-fill" style={{ width: `${pct}%` }}>
           {bubbles.map((b, i) => (
             <span
@@ -73,16 +111,6 @@ export default function WaterTracker({ date, target }: Props) {
             />
           ))}
         </div>
-        <input
-          type="range"
-          className="water-tracker-range"
-          min={0}
-          max={target}
-          step={0.1}
-          value={value}
-          onChange={(e) => handleChange(parseFloat(e.target.value))}
-          aria-label="Water intake (litres)"
-        />
       </div>
       <span className="water-tracker-count">
         {value.toFixed(1)}/{target.toFixed(1)}

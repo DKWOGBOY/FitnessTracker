@@ -459,6 +459,8 @@ textarea:focus {
   background: var(--color-water-soft);
   border-radius: 999px;
   overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
 }
 
 .water-tracker-bar-fill {
@@ -496,18 +498,6 @@ textarea:focus {
     transform: translateY(-20px) scale(1);
     opacity: 0;
   }
-}
-
-.water-tracker-range {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .water-tracker-count {
@@ -559,6 +549,10 @@ textarea:focus {
   background: var(--color-surface);
   touch-action: pan-y;
   cursor: pointer;
+}
+
+.swipe-row-content.snap {
+  transition: transform 0.2s ease;
 }
 
 .log-row {
