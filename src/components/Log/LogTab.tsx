@@ -4,8 +4,7 @@ import { useFoodLogs } from "../../hooks/useFoodLogs";
 import { useTargets } from "../../hooks/useTargets";
 import { useMealPresets } from "../../hooks/useMealPresets";
 import { useStreak } from "../../hooks/useStreak";
-import { todayStr } from "../../lib/dates";
-import { MEALS, macrosForQuantity, sumMacros, type Meal, type MealPresetWithItems } from "../../lib/types";
+import { MEALS, macrosForQuantity, sumMacros, type Meal } from "../../lib/types";
 import type { UnitSystem } from "../../lib/units";
 import DateNav from "./DateNav";
 import DailySummary from "./DailySummary";
@@ -15,9 +14,15 @@ import PresetBar from "./PresetBar";
 import FoodSearchModal from "./FoodSearchModal";
 import SavePresetModal from "./SavePresetModal";
 
-export default function LogTab({ unitSystem }: { unitSystem: UnitSystem }) {
-  const [date, setDate] = useState(todayStr());
-  const [modalMeal, setModalMeal] = useState<Meal | null>(null);
+interface Props {
+  unitSystem: UnitSystem;
+  date: string;
+  onDateChange: (date: string) => void;
+  modalMeal: Meal | null;
+  onModalMealChange: (meal: Meal | null) => void;
+}
+
+export default function LogTab({ unitSystem, date, onDateChange, modalMeal, onModalMealChange }: Props) {
   const [presetMeal, setPresetMeal] = useState<Meal | null>(null);
 
   const { foods, refresh: refreshFoods } = useFoods();
@@ -29,15 +34,14 @@ export default function LogTab({ unitSystem }: { unitSystem: UnitSystem }) {
   const consumed = sumMacros(logs.map((l) => macrosForQuantity(l.food, l.quantity)));
   const target = targetForDate(date);
 
-  async function handleQuickAddPreset(preset: MealPresetWithItems) {
-    for (const item of preset.items) {
-      await addLog(item.food_id, preset.default_meal, item.quantity);
-    }
+  async function handleQuickAddPreset(preset: (typeof presets)[number]) {
+    if (!preset.food_id) return;
+    await addLog(preset.food_id, preset.default_meal, 1);
   }
 
   return (
     <div>
-      <DateNav date={date} onChange={setDate} />
+      <DateNav date={date} onChange={onDateChange} />
 
       <div style={{ marginTop: 12 }}>
         <DailySummary consumed={consumed} target={target} streak={streak} />
@@ -53,7 +57,7 @@ export default function LogTab({ unitSystem }: { unitSystem: UnitSystem }) {
           key={meal}
           meal={meal}
           logs={logs.filter((l) => l.meal === meal)}
-          onAddClick={() => setModalMeal(meal)}
+          onAddClick={() => onModalMealChange(meal)}
           onEditQuantity={(id, qty) => updateLog(id, { quantity: qty })}
           onDelete={deleteLog}
           onSaveAsPreset={() => setPresetMeal(meal)}
@@ -66,12 +70,14 @@ export default function LogTab({ unitSystem }: { unitSystem: UnitSystem }) {
       {modalMeal && (
         <FoodSearchModal
           foods={foods}
+          presets={presets}
           initialMeal={modalMeal}
-          onClose={() => setModalMeal(null)}
+          onClose={() => onModalMealChange(null)}
           onAdd={async (foodId, meal, quantity) => {
             await addLog(foodId, meal, quantity);
           }}
           onFoodCreated={() => refreshFoods()}
+          onDeletePreset={deletePreset}
         />
       )}
 

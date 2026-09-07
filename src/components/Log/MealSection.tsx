@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type JSX } from "react";
 import { macrosForQuantity, sumMacros, type FoodLogWithFood, type Meal } from "../../lib/types";
+import { IconBreakfast, IconCheck, IconClose, IconDinner, IconLunch, IconSnack, IconStar } from "../icons";
 
 interface Props {
   meal: Meal;
@@ -15,6 +16,13 @@ const MEAL_LABELS: Record<Meal, string> = {
   lunch: "Lunch",
   dinner: "Dinner",
   snack: "Snacks",
+};
+
+const MEAL_ICONS: Record<Meal, (props: { className?: string }) => JSX.Element> = {
+  breakfast: IconBreakfast,
+  lunch: IconLunch,
+  dinner: IconDinner,
+  snack: IconSnack,
 };
 
 export default function MealSection({
@@ -43,23 +51,32 @@ export default function MealSection({
     setEditingId(null);
   }
 
+  const MealIcon = MEAL_ICONS[meal];
+
   return (
     <div className="card">
-      <div className="flex-between" style={{ marginBottom: logs.length ? 8 : 0 }}>
-        <h3 style={{ fontSize: 15 }}>{MEAL_LABELS[meal]}</h3>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {logs.length > 0 && (
-            <>
+      <div className="meal-row-header" style={{ marginBottom: logs.length ? 8 : 0 }}>
+        <div className="meal-row-title">
+          <span className="meal-icon-badge">
+            <MealIcon className="icon" />
+          </span>
+          <div>
+            <h3>{MEAL_LABELS[meal]}</h3>
+            {logs.length > 0 && (
               <span className="text-muted" style={{ fontSize: 12 }}>
                 {Math.round(totals.calories)} kcal
               </span>
-              <button className="btn btn-ghost" onClick={onSaveAsPreset} title="Save as preset">
-                ⭐
-              </button>
-            </>
+            )}
+          </div>
+        </div>
+        <div className="meal-row-actions">
+          {logs.length > 0 && (
+            <button className="btn btn-ghost" onClick={onSaveAsPreset} title="Save as preset">
+              <IconStar className="icon icon-star" filled />
+            </button>
           )}
-          <button className="btn btn-secondary" onClick={onAddClick}>
-            + Add
+          <button className="btn btn-pill" onClick={onAddClick}>
+            Add
           </button>
         </div>
       </div>
@@ -82,14 +99,14 @@ export default function MealSection({
                     style={{ width: 70, padding: "4px 8px" }}
                   />
                   <button className="btn btn-primary" style={{ padding: "4px 10px" }} onClick={() => saveEdit(log.id)}>
-                    ✓
+                    <IconCheck className="icon" />
                   </button>
                   <button
                     className="btn btn-secondary"
                     style={{ padding: "4px 10px" }}
                     onClick={() => setEditingId(null)}
                   >
-                    ✕
+                    <IconClose className="icon" />
                   </button>
                 </div>
               ) : (
@@ -105,7 +122,7 @@ export default function MealSection({
                   Edit
                 </button>
                 <button className="btn btn-ghost" onClick={() => onDelete(log.id)}>
-                  ✕
+                  <IconClose className="icon" />
                 </button>
               </div>
             )}

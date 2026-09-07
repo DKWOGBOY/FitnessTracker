@@ -13,6 +13,7 @@ export function useFoods() {
       const { data, error: err } = await supabase
         .from("foods")
         .select("*")
+        .neq("source", "meal")
         .order("name", { ascending: true });
       if (err) setError(err.message);
       else setFoods((data ?? []) as Food[]);

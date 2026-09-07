@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Food, FoodInput, ServingUnit } from "../../lib/types";
+import { IconClose } from "../icons";
 
 interface Props {
   food: Food | null;
@@ -56,7 +57,7 @@ export default function FoodForm({ food, onClose, onSave }: Props) {
         <div className="modal-header">
           <h3>{food ? "Edit food" : "Add food"}</h3>
           <button className="btn btn-ghost" onClick={onClose}>
-            ✕
+            <IconClose className="icon" />
           </button>
         </div>
 

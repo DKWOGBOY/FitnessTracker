@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FoodLogWithFood, Meal } from "../../lib/types";
+import { IconClose } from "../icons";
 
 interface Props {
   meal: Meal;
@@ -29,7 +30,7 @@ export default function SavePresetModal({ meal, logs, onClose, onSave }: Props) 
         <div className="modal-header">
           <h3>Save as preset</h3>
           <button className="btn btn-ghost" onClick={onClose}>
-            ✕
+            <IconClose className="icon" />
           </button>
         </div>
 

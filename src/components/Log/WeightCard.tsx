@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useWeightLogsForDate } from "../../hooks/useWeightLogs";
 import { formatWeight, weightUnitLabel, lbToKg, kgToLb, type UnitSystem } from "../../lib/units";
+import { IconClose } from "../icons";
 
 interface Props {
   date: string;
@@ -54,7 +55,7 @@ export default function WeightCard({ date, unitSystem }: Props) {
                   Edit
                 </button>
                 <button className="btn btn-ghost" onClick={() => deleteWeight(w.id)}>
-                  ✕
+                  <IconClose className="icon" />
                 </button>
               </div>
             </div>

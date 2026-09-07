@@ -1,4 +1,5 @@
 import type { MealPresetWithItems } from "../../lib/types";
+import { IconClose } from "../icons";
 
 interface Props {
   presets: MealPresetWithItems[];
@@ -43,7 +44,7 @@ export default function PresetBar({ presets, onQuickAdd, onDelete }: Props) {
                 onDelete(p.id);
               }}
             >
-              ✕
+              <IconClose className="icon" />
             </button>
           </div>
         ))}

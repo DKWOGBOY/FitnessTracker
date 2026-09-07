@@ -51,7 +51,7 @@ a {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 88px;
+  padding-bottom: 104px;
 }
 
 .app-header {
@@ -76,43 +76,98 @@ a {
   padding: 0 16px 24px;
 }
 
-.tab-nav {
+.bottom-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  justify-content: center;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .tab-nav-inner {
-  max-width: 720px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 7px;
+  background: rgba(255, 253, 249, 0.92);
+  border: 1px solid var(--color-border);
+  border-radius: 40px;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-modal);
 }
 
-.tab-nav button {
+.tab-nav-indicator {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(193, 96, 46, 0.4);
+  transition: transform 0.38s cubic-bezier(0.34, 1.4, 0.64, 1);
+  z-index: 0;
+}
+
+.tab-nav-inner button {
+  position: relative;
+  z-index: 1;
+  width: 52px;
+  height: 52px;
   background: none;
   border: none;
-  padding: 12px 4px 10px;
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition: color 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.tab-nav button.active {
-  color: var(--color-primary);
+.tab-nav-inner button:active {
+  transform: scale(0.88);
 }
 
-.tab-nav button .tab-icon {
-  font-size: 18px;
+.tab-nav-inner button.active {
+  color: #fff;
+}
+
+.tab-nav-inner button svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quick-add-fab {
+  width: 66px;
+  height: 66px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff8f2;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(193, 96, 46, 0.45);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quick-add-fab:active {
+  transform: scale(0.9);
+}
+
+.quick-add-fab .icon {
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.3;
 }

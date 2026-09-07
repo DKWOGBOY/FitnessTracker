@@ -1,5 +1,5 @@
 export type ServingUnit = "g" | "ml" | "oz" | "piece";
-export type FoodSource = "off" | "usda" | "manual";
+export type FoodSource = "off" | "usda" | "manual" | "meal";
 export type Meal = "breakfast" | "lunch" | "dinner" | "snack";
 
 export const MEALS: Meal[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -59,6 +59,7 @@ export interface MealPreset {
   user_id: string;
   name: string;
   default_meal: Meal;
+  food_id: string | null;
   created_at: string;
 }
 
@@ -72,6 +73,7 @@ export interface MealPresetItem {
 
 export interface MealPresetWithItems extends MealPreset {
   items: (MealPresetItem & { food: Food })[];
+  food: Food | null;
 }
 
 export interface Macros {

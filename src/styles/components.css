@@ -19,6 +19,27 @@
   margin: 20px 0 8px;
 }
 
+.icon {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+  flex-shrink: 0;
+}
+
+.icon-star {
+  color: var(--color-carbs);
+}
+
+.icon-lg {
+  width: 18px;
+  height: 18px;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -129,7 +150,7 @@ textarea:focus {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 50;
+  z-index: 65;
 }
 
 .modal-sheet {
@@ -263,6 +284,280 @@ textarea:focus {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.calorie-hero-remaining {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.calorie-ring-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 20px;
+}
+
+.calorie-ring-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ring-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ring-value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.ring-unit {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.macro-ring-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.macro-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.macro-ring-value {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.macro-ring-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meal-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.meal-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.meal-row-title h3 {
+  font-size: 15px;
+}
+
+.meal-icon-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.meal-icon-badge .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.meal-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-pill {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.btn-pill:hover {
+  background: var(--color-primary);
+  color: #fff8f2;
+}
+
+.screen-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  flex-shrink: 0;
+}
+
+.screen-back-btn {
+  position: absolute;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-surface-alt);
+  border: none;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.meal-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.meal-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary);
+  padding: 4px 22px 4px 4px;
+  cursor: pointer;
+}
+
+.meal-select-wrap .icon {
+  position: absolute;
+  right: 4px;
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
+.search-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  margin: 0 16px 12px;
+  flex-shrink: 0;
+}
+
+.search-pill .icon {
+  color: var(--color-text-muted);
+}
+
+.search-pill input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  padding: 0;
+}
+
+.tab-row {
+  display: flex;
+  gap: 20px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.tab-row button {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 8px 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab-row button.active {
+  color: var(--color-text);
+}
+
+.tab-row button.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 24px;
+}
+
+.btn-add-circle {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-add-circle.added {
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .error-text {
