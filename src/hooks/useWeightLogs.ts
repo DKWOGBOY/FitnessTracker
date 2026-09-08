@@ -26,30 +26,31 @@ export function useWeightLogsForDate(date: string) {
   }, [refresh]);
 
   async function addWeight(weightKg: number, notes?: string) {
-    const { data: userData } = await supabase.auth.getUser();
-    const { error: err } = await supabase.from("weight_logs").insert({
-      log_date: date,
-      weight_kg: weightKg,
-      notes: notes ?? null,
-      user_id: userData.user?.id,
-    });
+    // user_id defaults to auth.uid() server-side - no need to fetch/send it.
+    const { data, error: err } = await supabase
+      .from("weight_logs")
+      .insert({ log_date: date, weight_kg: weightKg, notes: notes ?? null })
+      .select()
+      .single();
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => [...prev, data as WeightLog]);
   }
 
   async function updateWeight(id: string, weightKg: number, notes?: string) {
-    const { error: err } = await supabase
+    const { data, error: err } = await supabase
       .from("weight_logs")
       .update({ weight_kg: weightKg, notes: notes ?? null })
-      .eq("id", id);
+      .eq("id", id)
+      .select()
+      .single();
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => prev.map((l) => (l.id === id ? (data as WeightLog) : l)));
   }
 
   async function deleteWeight(id: string) {
     const { error: err } = await supabase.from("weight_logs").delete().eq("id", id);
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => prev.filter((l) => l.id !== id));
   }
 
   return { logs, loading, refresh, addWeight, updateWeight, deleteWeight };

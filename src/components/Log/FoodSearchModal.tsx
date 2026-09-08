@@ -2,49 +2,87 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import {
   findExistingMatch,
+  rankCandidates,
   searchOpenFoodFacts,
   searchUsda,
   type NormalizedFoodCandidate,
 } from "../../lib/foodApi";
 import { useFoodLogHistory, type FoodHistoryEntry } from "../../hooks/useFoodLogHistory";
-import { MEALS, macrosForQuantity, type Food, type Meal, type MealPresetWithItems } from "../../lib/types";
+import type { PresetItemInput } from "../../hooks/useMealPresets";
+import {
+  MEALS,
+  STANDARD_SERVINGS,
+  defaultServing,
+  macrosForServing,
+  sumMacros,
+  type Food,
+  type FoodInput,
+  type FoodServing,
+  type Macros,
+  type Meal,
+  type MealPresetWithItems,
+} from "../../lib/types";
 import { IconArrowLeft, IconCheck, IconChevronDown, IconClose, IconPlus, IconSearch, IconStar } from "../icons";
 import Energy from "../Energy";
+import MealBuilder from "../Foods/MealBuilder";
 
 interface Props {
   foods: Food[];
-  presets: MealPresetWithItems[];
-  initialMeal: Meal;
+  servingsByFood: Map<string, FoodServing[]>;
+  presets?: MealPresetWithItems[];
+  initialMeal?: Meal;
+  mode?: "log" | "picker";
   onClose: () => void;
-  onAdd: (foodId: string, meal: Meal, quantity: number) => Promise<void>;
+  onAdd?: (foodId: string, meal: Meal, quantity: number, servingId: string | null) => Promise<void>;
+  onPick?: (food: Food, serving: FoodServing | null, quantity: number) => void;
   onFoodCreated: (food: Food) => void;
-  onDeletePreset: (id: string) => void;
+  onDeletePreset?: (id: string) => void;
+  onCreateFood?: (input: FoodInput) => Promise<Food>;
+  onSaveMeal?: (name: string, defaultMeal: Meal, items: PresetItemInput[]) => Promise<void>;
 }
 
 const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY as string | undefined;
 
 type ScreenTab = "history" | "meals" | "foods" | "search";
 
-const TABS: { key: ScreenTab; label: string }[] = [
+const LOG_TABS: { key: ScreenTab; label: string }[] = [
   { key: "history", label: "History" },
   { key: "meals", label: "My Meals" },
   { key: "foods", label: "My Foods" },
   { key: "search", label: "Search Online" },
 ];
 
+const PICKER_TABS: { key: ScreenTab; label: string }[] = [
+  { key: "history", label: "History" },
+  { key: "foods", label: "My Foods" },
+  { key: "search", label: "Search Online" },
+];
+
 export default function FoodSearchModal({
   foods,
-  presets,
+  servingsByFood,
+  presets = [],
   initialMeal,
+  mode = "log",
   onClose,
   onAdd,
+  onPick,
   onFoodCreated,
   onDeletePreset,
+  onCreateFood,
+  onSaveMeal,
 }: Props) {
-  const [meal, setMeal] = useState<Meal>(initialMeal);
+  const isPicker = mode === "picker";
+  const TABS = isPicker ? PICKER_TABS : LOG_TABS;
+  const [meal, setMeal] = useState<Meal>(initialMeal ?? "breakfast");
   const [tab, setTab] = useState<ScreenTab>("history");
   const [query, setQuery] = useState("");
-  const [addedId, setAddedId] = useState<string | null>(null);
+  const [addedMacros, setAddedMacros] = useState<Map<string, Macros>>(new Map());
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [toastKey, setToastKey] = useState(0);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showMealBuilder, setShowMealBuilder] = useState(false);
 
   const { entries: history, loading: historyLoading } = useFoodLogHistory();
 
@@ -57,6 +95,7 @@ export default function FoodSearchModal({
   const [pendingMatch, setPendingMatch] = useState<Food | null>(null);
 
   const [detailFood, setDetailFood] = useState<Food | null>(null);
+  const [detailServingId, setDetailServingId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("1");
   const [saving, setSaving] = useState(false);
 
@@ -80,19 +119,43 @@ export default function FoodSearchModal({
     });
   }, [foods, q]);
 
-  function flashAdded(id: string) {
-    setAddedId(id);
-    setTimeout(() => setAddedId((cur) => (cur === id ? null : cur)), 900);
+  function servingsFor(foodId: string): FoodServing[] {
+    return servingsByFood.get(foodId) ?? [];
   }
 
-  function openDetail(food: Food, defaultQty: number) {
+  function showToast() {
+    setToastVisible(true);
+    setToastKey((k) => k + 1);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 1400);
+  }
+
+  function markAdded(food: Food, serving: FoodServing | null, qty: number) {
+    const m = macrosForServing(food, serving?.grams_equivalent ?? 100, qty);
+    setAddedMacros((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(food.id);
+      next.set(food.id, existing ? sumMacros([existing, m]) : m);
+      return next;
+    });
+    setJustAddedId(food.id);
+    setTimeout(() => setJustAddedId((cur) => (cur === food.id ? null : cur)), 500);
+    showToast();
+  }
+
+  function openDetail(food: Food, serving: FoodServing | null, defaultQty: number) {
     setDetailFood(food);
+    setDetailServingId(serving?.id ?? defaultServing(servingsFor(food.id))?.id ?? null);
     setQuantity(String(defaultQty));
   }
 
-  async function quickAdd(food: Food, qty: number) {
-    await onAdd(food.id, meal, qty);
-    flashAdded(food.id);
+  async function quickAdd(food: Food, serving: FoodServing | null, qty: number) {
+    if (isPicker) {
+      onPick?.(food, serving, qty);
+    } else {
+      await onAdd?.(food.id, meal, qty, serving?.id ?? null);
+    }
+    markAdded(food, serving, qty);
   }
 
   useEffect(() => {
@@ -118,7 +181,7 @@ export default function FoodSearchModal({
         ...(offResult.status === "fulfilled" ? offResult.value : []),
         ...(usdaResult.status === "fulfilled" ? usdaResult.value : []),
       ];
-      setApiResults(merged);
+      setApiResults(rankCandidates(merged, trimmed));
       setApiError(offResult.status === "rejected" && usdaResult.status === "rejected" ? "Search failed." : null);
       setApiLoading(false);
     }, 400);
@@ -137,25 +200,42 @@ export default function FoodSearchModal({
   }
 
   async function createFoodFromCandidate(candidate: NormalizedFoodCandidate) {
-    const { data: userData } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from("foods")
-      .insert({ ...candidate, user_id: userData.user?.id })
-      .select()
-      .single();
+    // user_id defaults to auth.uid() server-side - no need to fetch/send it.
+    const {
+      extraServings,
+      isAustralian: _isAustralian,
+      isGeneric: _isGeneric,
+      popularity: _popularity,
+      recommended: _recommended,
+      ...foodInput
+    } = candidate;
+    const { data, error } = await supabase.from("foods").insert(foodInput).select().single();
     if (error) {
       setApiError(error.message);
       return;
     }
     const food = data as Food;
+    const existingLabels = new Set(extraServings.map((s) => s.label.trim().toLowerCase()));
+    const standard = STANDARD_SERVINGS[food.base_unit].filter((s) => !existingLabels.has(s.label.toLowerCase()));
+    const rows = [
+      { food_id: food.id, label: `100 ${food.base_unit}`, grams_equivalent: 100, is_default: extraServings.length === 0 },
+      ...extraServings.map((s, i) => ({
+        food_id: food.id,
+        label: s.label,
+        grams_equivalent: s.grams_equivalent,
+        is_default: i === 0,
+      })),
+      ...standard.map((s) => ({ food_id: food.id, label: s.label, grams_equivalent: s.grams_equivalent, is_default: false })),
+    ];
+    await supabase.from("food_servings").insert(rows);
     onFoodCreated(food);
     setPendingCandidate(null);
     setPendingMatch(null);
-    openDetail(food, 1);
+    openDetail(food, null, 1);
   }
 
   function useExistingMatch() {
-    if (pendingMatch) openDetail(pendingMatch, 1);
+    if (pendingMatch) openDetail(pendingMatch, null, 1);
     setPendingCandidate(null);
     setPendingMatch(null);
   }
@@ -164,16 +244,26 @@ export default function FoodSearchModal({
     if (!detailFood) return;
     const qty = parseFloat(quantity);
     if (Number.isNaN(qty) || qty <= 0) return;
+    const serving = servingsFor(detailFood.id).find((s) => s.id === detailServingId) ?? null;
     setSaving(true);
     try {
-      await onAdd(detailFood.id, meal, qty);
+      if (isPicker) {
+        onPick?.(detailFood, serving, qty);
+      } else {
+        await onAdd?.(detailFood.id, meal, qty, serving?.id ?? null);
+      }
+      markAdded(detailFood, serving, qty);
       setDetailFood(null);
     } finally {
       setSaving(false);
     }
   }
 
-  const detailMacros = detailFood ? macrosForQuantity(detailFood, parseFloat(quantity) || 0) : null;
+  const detailServings = detailFood ? servingsFor(detailFood.id) : [];
+  const detailServing = detailServings.find((s) => s.id === detailServingId) ?? null;
+  const detailMacros = detailFood
+    ? macrosForServing(detailFood, detailServing?.grams_equivalent ?? 100, parseFloat(quantity) || 0)
+    : null;
 
   return (
     <div className="screen-overlay">
@@ -181,16 +271,20 @@ export default function FoodSearchModal({
         <button className="screen-back-btn" onClick={onClose} aria-label="Back">
           <IconArrowLeft className="icon icon-lg" />
         </button>
-        <div className="meal-select-wrap">
-          <select className="meal-select" value={meal} onChange={(e) => setMeal(e.target.value as Meal)}>
-            {MEALS.map((m) => (
-              <option key={m} value={m}>
-                {m[0].toUpperCase() + m.slice(1)}
-              </option>
-            ))}
-          </select>
-          <IconChevronDown className="icon" />
-        </div>
+        {isPicker ? (
+          <h3 style={{ fontSize: 16 }}>Add food</h3>
+        ) : (
+          <div className="meal-select-wrap">
+            <select className="meal-select" value={meal} onChange={(e) => setMeal(e.target.value as Meal)}>
+              {MEALS.map((m) => (
+                <option key={m} value={m}>
+                  {m[0].toUpperCase() + m.slice(1)}
+                </option>
+              ))}
+            </select>
+            <IconChevronDown className="icon" />
+          </div>
+        )}
       </div>
 
       <div className="search-pill">
@@ -228,32 +322,46 @@ export default function FoodSearchModal({
               <HistoryRow
                 key={entry.food.id}
                 entry={entry}
-                added={addedId === entry.food.id}
-                onQuickAdd={() => quickAdd(entry.food, entry.lastQuantity)}
-                onOpenDetail={() => openDetail(entry.food, entry.lastQuantity)}
+                addedMacros={addedMacros.get(entry.food.id) ?? null}
+                justAdded={justAddedId === entry.food.id}
+                onQuickAdd={() => quickAdd(entry.food, entry.lastServing, entry.lastQuantity)}
+                onOpenDetail={() => openDetail(entry.food, entry.lastServing, entry.lastQuantity)}
               />
             ))
           ))}
 
-        {tab === "meals" &&
-          (filteredPresets.length === 0 ? (
-            <p className="empty-state">
-              {q
-                ? "No matching saved meals."
-                : "No saved meals yet — save a meal's foods as a preset from the Log tab to see it here."}
-            </p>
-          ) : (
-            filteredPresets.map((preset) => (
-              <PresetRow
-                key={preset.id}
-                preset={preset}
-                added={!!preset.food && addedId === preset.food.id}
-                onQuickAdd={() => preset.food && quickAdd(preset.food, 1)}
-                onOpenDetail={() => preset.food && openDetail(preset.food, 1)}
-                onDelete={() => onDeletePreset(preset.id)}
-              />
-            ))
-          ))}
+        {tab === "meals" && (
+          <>
+            <button
+              className="btn btn-secondary btn-block"
+              style={{ marginBottom: 12 }}
+              onClick={() => setShowMealBuilder(true)}
+            >
+              <IconPlus className="icon" /> Create meal
+            </button>
+            {filteredPresets.length === 0 ? (
+              <p className="empty-state">
+                {q ? "No matching saved meals." : "No saved meals yet — create one above."}
+              </p>
+            ) : (
+              filteredPresets.map((preset) => (
+                <PresetRow
+                  key={preset.id}
+                  preset={preset}
+                  addedMacros={preset.food ? addedMacros.get(preset.food.id) ?? null : null}
+                  justAdded={!!preset.food && justAddedId === preset.food.id}
+                  onQuickAdd={() =>
+                    preset.food && quickAdd(preset.food, defaultServing(servingsFor(preset.food.id)), 1)
+                  }
+                  onOpenDetail={() =>
+                    preset.food && openDetail(preset.food, defaultServing(servingsFor(preset.food.id)), 1)
+                  }
+                  onDelete={() => onDeletePreset?.(preset.id)}
+                />
+              ))
+            )}
+          </>
+        )}
 
         {tab === "foods" &&
           (filteredFoods.length === 0 ? (
@@ -265,9 +373,10 @@ export default function FoodSearchModal({
               <FoodRow
                 key={food.id}
                 food={food}
-                added={addedId === food.id}
-                onQuickAdd={() => quickAdd(food, 1)}
-                onOpenDetail={() => openDetail(food, 1)}
+                addedMacros={addedMacros.get(food.id) ?? null}
+                justAdded={justAddedId === food.id}
+                onQuickAdd={() => quickAdd(food, defaultServing(servingsFor(food.id)), 1)}
+                onOpenDetail={() => openDetail(food, defaultServing(servingsFor(food.id)), 1)}
               />
             ))
           ))}
@@ -295,14 +404,22 @@ export default function FoodSearchModal({
                   <div className="list-row" key={`${c.source}-${c.source_id}`}>
                     <div className="list-row-main">
                       <div className="list-row-title">
+                        {c.recommended && (
+                          <span
+                            style={{ color: "var(--color-success, #2e9e5b)", verticalAlign: "middle", marginRight: 2 }}
+                            title="Recommended: standard match for this search"
+                          >
+                            <IconStar className="icon" filled />
+                          </span>
+                        )}
                         {c.name}{" "}
                         <span className="badge badge-muted" style={{ fontSize: 9, verticalAlign: "middle" }}>
                           {c.source === "off" ? "Open Food Facts" : "USDA"}
                         </span>
                       </div>
                       <div className="list-row-sub">
-                        <Energy kcal={c.calories} /> /100{c.serving_unit === "ml" ? "ml" : "g"} · P{" "}
-                        {Math.round(c.protein_g)}g C {Math.round(c.carbs_g)}g F {Math.round(c.fat_g)}g
+                        <Energy kcal={c.calories} /> /100{c.base_unit} · P {Math.round(c.protein_g)}g C{" "}
+                        {Math.round(c.carbs_g)}g F {Math.round(c.fat_g)}g
                       </div>
                     </div>
                     <div className="list-row-actions">
@@ -359,7 +476,17 @@ export default function FoodSearchModal({
 
             <div className="field-row">
               <div className="field">
-                <label>Quantity ({detailFood.serving_unit} × serving)</label>
+                <label>Serving</label>
+                <select value={detailServingId ?? ""} onChange={(e) => setDetailServingId(e.target.value)}>
+                  {detailServings.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Quantity</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -370,22 +497,22 @@ export default function FoodSearchModal({
                   autoFocus
                 />
               </div>
-              <div className="field">
-                <label>Meal</label>
-                <select value={meal} onChange={(e) => setMeal(e.target.value as Meal)}>
-                  {MEALS.map((m) => (
-                    <option key={m} value={m}>
-                      {m[0].toUpperCase() + m.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isPicker && (
+                <div className="field">
+                  <label>Meal</label>
+                  <select value={meal} onChange={(e) => setMeal(e.target.value as Meal)}>
+                    {MEALS.map((m) => (
+                      <option key={m} value={m}>
+                        {m[0].toUpperCase() + m.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <p className="text-muted" style={{ fontSize: 12, marginBottom: 14 }}>
-              Serving: {detailFood.serving_size}
-              {detailFood.serving_unit} • <Energy kcal={detailFood.calories} /> /100
-              {detailFood.serving_unit === "ml" ? "ml" : "g"}
+              <Energy kcal={detailFood.calories} /> /100{detailFood.base_unit} base
             </p>
 
             <div className="card" style={{ background: "var(--color-surface-alt)", marginBottom: 16 }}>
@@ -401,46 +528,117 @@ export default function FoodSearchModal({
             </div>
 
             <button className="btn btn-primary btn-block" onClick={handleConfirm} disabled={saving || !quantity}>
-              {saving ? "Adding..." : "Add to log"}
+              {saving ? "Adding..." : isPicker ? "Add to meal" : "Add to log"}
             </button>
           </div>
         </div>
       )}
+
+      {toastVisible && (
+        <div className="log-toast" key={toastKey}>
+          Food logged!
+        </div>
+      )}
+
+      {showMealBuilder && onCreateFood && onSaveMeal && (
+        <MealBuilder
+          foods={foods}
+          servingsByFood={servingsByFood}
+          onClose={() => setShowMealBuilder(false)}
+          onCreateFood={onCreateFood}
+          onFoodCreated={onFoodCreated}
+          onSave={async (name, defaultMeal, items) => {
+            await onSaveMeal(name, defaultMeal, items);
+            setShowMealBuilder(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function QuickAddButton({
+  added,
+  justAdded,
+  onClick,
+}: {
+  added: boolean;
+  justAdded: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      className={`btn btn-primary btn-icon btn-add-circle${added ? " added" : ""}${justAdded ? " just-added" : ""}`}
+      onClick={onClick}
+      aria-label="Quick add"
+    >
+      {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
+      {justAdded && (
+        <>
+          <span className="quick-add-ripple" />
+          <span className="quick-add-confetti">
+            <span className="dot c1" />
+            <span className="dot c2" />
+            <span className="dot c3" />
+            <span className="dot c4" />
+          </span>
+        </>
+      )}
+    </button>
+  );
+}
+
+function MacroPillsRow({ macros }: { macros: Macros }) {
+  return (
+    <div className="macro-pills-row">
+      <span className="macro-pill-badge" style={{ animationDelay: "0ms" }}>
+        <span className="macro-pill-dot" style={{ background: "var(--color-protein)" }} />
+        {macros.protein_g.toFixed(1)}g Protein
+      </span>
+      <span className="macro-pill-badge" style={{ animationDelay: "130ms" }}>
+        <span className="macro-pill-dot" style={{ background: "var(--color-carbs)" }} />
+        {macros.carbs_g.toFixed(1)}g Carbs
+      </span>
+      <span className="macro-pill-badge" style={{ animationDelay: "260ms" }}>
+        <span className="macro-pill-dot" style={{ background: "var(--color-fat)" }} />
+        {macros.fat_g.toFixed(1)}g Fat
+      </span>
     </div>
   );
 }
 
 function HistoryRow({
   entry,
-  added,
+  addedMacros,
+  justAdded,
   onQuickAdd,
   onOpenDetail,
 }: {
   entry: FoodHistoryEntry;
-  added: boolean;
+  addedMacros: Macros | null;
+  justAdded: boolean;
   onQuickAdd: () => void;
   onOpenDetail: () => void;
 }) {
-  const macros = macrosForQuantity(entry.food, entry.lastQuantity);
+  const macros = macrosForServing(entry.food, entry.lastServing?.grams_equivalent ?? 100, entry.lastQuantity);
   return (
     <div className="list-row" style={{ cursor: "pointer" }} onClick={onOpenDetail}>
       <div className="list-row-main">
         <div className="list-row-title">{entry.food.name}</div>
         <div className="list-row-sub">
-          <Energy kcal={macros.calories} /> · {entry.lastQuantity}× serving
+          <Energy kcal={macros.calories} /> · {entry.lastQuantity}× {entry.lastServing?.label ?? "100" + entry.food.base_unit}
         </div>
+        {addedMacros && <MacroPillsRow macros={addedMacros} />}
       </div>
       <div className="list-row-actions">
-        <button
-          className={`btn btn-primary btn-icon btn-add-circle${added ? " added" : ""}`}
+        <QuickAddButton
+          added={!!addedMacros}
+          justAdded={justAdded}
           onClick={(e) => {
             e.stopPropagation();
             onQuickAdd();
           }}
-          aria-label="Quick add"
-        >
-          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
-        </button>
+        />
       </div>
     </div>
   );
@@ -448,12 +646,14 @@ function HistoryRow({
 
 function FoodRow({
   food,
-  added,
+  addedMacros,
+  justAdded,
   onQuickAdd,
   onOpenDetail,
 }: {
   food: Food;
-  added: boolean;
+  addedMacros: Macros | null;
+  justAdded: boolean;
   onQuickAdd: () => void;
   onOpenDetail: () => void;
 }) {
@@ -469,20 +669,19 @@ function FoodRow({
           )}
         </div>
         <div className="list-row-sub">
-          <Energy kcal={food.calories} /> /100{food.serving_unit === "ml" ? "ml" : "g"}
+          <Energy kcal={food.calories} /> /100{food.base_unit}
         </div>
+        {addedMacros && <MacroPillsRow macros={addedMacros} />}
       </div>
       <div className="list-row-actions">
-        <button
-          className={`btn btn-primary btn-icon btn-add-circle${added ? " added" : ""}`}
+        <QuickAddButton
+          added={!!addedMacros}
+          justAdded={justAdded}
           onClick={(e) => {
             e.stopPropagation();
             onQuickAdd();
           }}
-          aria-label="Quick add"
-        >
-          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
-        </button>
+        />
       </div>
     </div>
   );
@@ -490,13 +689,15 @@ function FoodRow({
 
 function PresetRow({
   preset,
-  added,
+  addedMacros,
+  justAdded,
   onQuickAdd,
   onOpenDetail,
   onDelete,
 }: {
   preset: MealPresetWithItems;
-  added: boolean;
+  addedMacros: Macros | null;
+  justAdded: boolean;
   onQuickAdd: () => void;
   onOpenDetail: () => void;
   onDelete: () => void;
@@ -514,6 +715,7 @@ function PresetRow({
             </>
           )}
         </div>
+        {addedMacros && <MacroPillsRow macros={addedMacros} />}
       </div>
       <div className="list-row-actions">
         <button
@@ -526,16 +728,14 @@ function PresetRow({
         >
           <IconClose className="icon" />
         </button>
-        <button
-          className={`btn btn-primary btn-icon btn-add-circle${added ? " added" : ""}`}
+        <QuickAddButton
+          added={!!addedMacros}
+          justAdded={justAdded}
           onClick={(e) => {
             e.stopPropagation();
             onQuickAdd();
           }}
-          aria-label="Quick add"
-        >
-          {added ? <IconCheck className="icon" /> : <IconPlus className="icon" />}
-        </button>
+        />
       </div>
     </div>
   );

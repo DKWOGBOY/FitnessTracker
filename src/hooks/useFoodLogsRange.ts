@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { macrosForQuantity, type Macros } from "../lib/types";
+import { macrosForLog, type Food, type FoodServing, type Macros } from "../lib/types";
 
 export interface DayMacros extends Macros {
   date: string;
@@ -15,7 +15,7 @@ export function useFoodLogsRange(fromDate: string | null) {
     try {
       let query = supabase
         .from("food_logs")
-        .select("log_date, quantity, food:foods(*)")
+        .select("log_date, quantity, food:foods(*), serving:food_servings(*)")
         .order("log_date", { ascending: true });
       if (fromDate) query = query.gte("log_date", fromDate);
       const { data } = await query;
@@ -24,9 +24,10 @@ export function useFoodLogsRange(fromDate: string | null) {
       for (const row of (data ?? []) as unknown as {
         log_date: string;
         quantity: number;
-        food: Parameters<typeof macrosForQuantity>[0];
+        food: Food;
+        serving: FoodServing | null;
       }[]) {
-        const m = macrosForQuantity(row.food, row.quantity);
+        const m = macrosForLog(row);
         const existing = byDate.get(row.log_date) ?? {
           calories: 0,
           protein_g: 0,

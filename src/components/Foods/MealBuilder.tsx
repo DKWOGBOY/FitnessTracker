@@ -1,39 +1,69 @@
-import { useMemo, useState } from "react";
-import { MEALS, macrosForQuantity, type Food, type FoodInput, type Meal } from "../../lib/types";
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
+import type { PresetItemInput } from "../../hooks/useMealPresets";
+import {
+  defaultServing,
+  macrosForServing,
+  type Food,
+  type FoodInput,
+  type FoodServing,
+  type Meal,
+  type MealPresetWithItems,
+} from "../../lib/types";
 import { IconArrowLeft, IconClose, IconPlus } from "../icons";
+import { useEnergyUnit } from "../../context/EnergyUnitContext";
+import { energyUnitLabel, formatEnergy } from "../../lib/energy";
 import Energy from "../Energy";
+import ProgressRing from "../Log/ProgressRing";
+import FoodSearchModal from "../Log/FoodSearchModal";
 import FoodForm from "./FoodForm";
 
 interface Props {
   foods: Food[];
+  servingsByFood: Map<string, FoodServing[]>;
+  preset?: MealPresetWithItems;
   onClose: () => void;
   onCreateFood: (input: FoodInput) => Promise<Food>;
-  onSave: (name: string, defaultMeal: Meal, items: { foodId: string; quantity: number }[]) => Promise<void>;
+  onFoodCreated: (food: Food) => void;
+  onSave?: (name: string, defaultMeal: Meal, items: PresetItemInput[]) => Promise<void>;
+  onUpdate?: (id: string, name: string, items: PresetItemInput[]) => Promise<void>;
 }
 
 interface BuilderItem {
   food: Food;
+  serving: FoodServing | null;
   quantity: number;
 }
 
-export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Props) {
-  const [name, setName] = useState("");
-  const [defaultMeal, setDefaultMeal] = useState<Meal>("breakfast");
-  const [items, setItems] = useState<BuilderItem[]>([]);
+const DEFAULT_MEAL: Meal = "snack";
+
+function macroPct(macroKcal: number, totalKcal: number) {
+  if (totalKcal <= 0) return 0;
+  return Math.round((macroKcal / totalKcal) * 100);
+}
+
+export default function MealBuilder({
+  foods,
+  servingsByFood,
+  preset,
+  onClose,
+  onCreateFood,
+  onFoodCreated,
+  onSave,
+  onUpdate,
+}: Props) {
+  const { energyUnit } = useEnergyUnit();
+  const [name, setName] = useState(preset?.name ?? "");
+  const [items, setItems] = useState<BuilderItem[]>(
+    () => preset?.items.map((i) => ({ food: i.food, serving: i.serving, quantity: i.quantity })) ?? [],
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState("");
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const pickerResults = useMemo(() => {
-    const q = pickerQuery.trim().toLowerCase();
-    const base = q ? foods.filter((f) => f.name.toLowerCase().includes(q)) : foods;
-    return base.slice(0, 30);
-  }, [foods, pickerQuery]);
-
   const totals = items.reduce(
     (acc, i) => {
-      const m = macrosForQuantity(i.food, i.quantity);
+      const m = macrosForServing(i.food, i.serving?.grams_equivalent ?? 100, i.quantity);
       return {
         calories: acc.calories + m.calories,
         protein_g: acc.protein_g + m.protein_g,
@@ -44,13 +74,17 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
     { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   );
 
-  function addItem(food: Food) {
+  const carbsKcal = totals.carbs_g * 4;
+  const fatKcal = totals.fat_g * 9;
+  const proteinKcal = totals.protein_g * 4;
+
+  function addItem(food: Food, serving: FoodServing | null, quantity = 1) {
     setItems((prev) => {
       const existing = prev.find((i) => i.food.id === food.id);
       if (existing) {
-        return prev.map((i) => (i.food.id === food.id ? { ...i, quantity: i.quantity + 1 } : i));
+        return prev.map((i) => (i.food.id === food.id ? { ...i, quantity: i.quantity + quantity } : i));
       }
-      return [...prev, { food, quantity: 1 }];
+      return [...prev, { food, serving, quantity }];
     });
   }
 
@@ -66,11 +100,16 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
     if (!name.trim() || items.length === 0) return;
     setSaving(true);
     try {
-      await onSave(
-        name.trim(),
-        defaultMeal,
-        items.map((i) => ({ foodId: i.food.id, quantity: i.quantity })),
-      );
+      const itemInputs: PresetItemInput[] = items.map((i) => ({
+        foodId: i.food.id,
+        servingId: i.serving?.id ?? null,
+        quantity: i.quantity,
+      }));
+      if (preset) {
+        await onUpdate?.(preset.id, name.trim(), itemInputs);
+      } else {
+        await onSave?.(name.trim(), DEFAULT_MEAL, itemInputs);
+      }
     } finally {
       setSaving(false);
     }
@@ -82,41 +121,45 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
         <button className="screen-back-btn" onClick={onClose} aria-label="Back">
           <IconArrowLeft className="icon icon-lg" />
         </button>
-        <h3 style={{ fontSize: 16 }}>New meal</h3>
+        <h3 style={{ fontSize: 16 }}>{preset ? "Edit meal" : "New meal"}</h3>
       </div>
 
       <div className="screen-body">
         <div className="field">
           <label>Meal title</label>
-          <input
-            type="text"
-            placeholder="e.g. Chicken Meal Prep 1"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         </div>
 
-        <div className="field">
-          <label>Default meal</label>
-          <select value={defaultMeal} onChange={(e) => setDefaultMeal(e.target.value as Meal)}>
-            {MEALS.map((m) => (
-              <option key={m} value={m}>
-                {m[0].toUpperCase() + m.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="card" style={{ background: "var(--color-surface-alt)", marginBottom: 16 }}>
-          <div className="flex-between">
-            <strong>
-              <Energy kcal={totals.calories} />
-            </strong>
-            <span className="text-muted" style={{ fontSize: 12 }}>
-              P {Math.round(totals.protein_g)}g · C {Math.round(totals.carbs_g)}g · F{" "}
-              {Math.round(totals.fat_g)}g
-            </span>
+        <div className="card meal-totals-card">
+          <div className="ring-wrap" style={{ width: 76, height: 76 }}>
+            <ProgressRing pct={0} color="var(--color-primary)" trackColor="var(--color-bg-alt)" size={76} thickness={8} />
+            <div className="ring-center">
+              <span className="meal-totals-kcal">{formatEnergy(totals.calories, energyUnit)}</span>
+              <span className="meal-totals-kcal-unit">{energyUnitLabel(energyUnit)}</span>
+            </div>
+          </div>
+          <div className="meal-totals-cols">
+            <div className="meal-totals-col">
+              <span className="meal-totals-pct" style={{ color: "var(--color-carbs)" }}>
+                {macroPct(carbsKcal, totals.calories)}%
+              </span>
+              <span className="meal-totals-g">{Math.round(totals.carbs_g)} g</span>
+              <span className="meal-totals-label">Carbs</span>
+            </div>
+            <div className="meal-totals-col">
+              <span className="meal-totals-pct" style={{ color: "var(--color-fat)" }}>
+                {macroPct(fatKcal, totals.calories)}%
+              </span>
+              <span className="meal-totals-g">{Math.round(totals.fat_g)} g</span>
+              <span className="meal-totals-label">Fat</span>
+            </div>
+            <div className="meal-totals-col">
+              <span className="meal-totals-pct" style={{ color: "var(--color-protein)" }}>
+                {macroPct(proteinKcal, totals.calories)}%
+              </span>
+              <span className="meal-totals-g">{Math.round(totals.protein_g)} g</span>
+              <span className="meal-totals-label">Protein</span>
+            </div>
           </div>
         </div>
 
@@ -127,14 +170,14 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
           <p className="empty-state">No foods added yet.</p>
         ) : (
           items.map((item) => {
-            const m = macrosForQuantity(item.food, item.quantity);
+            const m = macrosForServing(item.food, item.serving?.grams_equivalent ?? 100, item.quantity);
             return (
               <div className="list-row" key={item.food.id}>
                 <div className="list-row-main">
                   <div className="list-row-title">{item.food.name}</div>
                   <div className="list-row-sub">
-                    <Energy kcal={m.calories} /> · P {Math.round(m.protein_g)}g C {Math.round(m.carbs_g)}g F{" "}
-                    {Math.round(m.fat_g)}g
+                    {item.serving?.label ?? `100 ${item.food.base_unit}`} · <Energy kcal={m.calories} /> · P{" "}
+                    {Math.round(m.protein_g)}g C {Math.round(m.carbs_g)}g F {Math.round(m.fat_g)}g
                   </div>
                 </div>
                 <div className="list-row-actions" style={{ gap: 8 }}>
@@ -170,53 +213,20 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
           onClick={handleSave}
           disabled={saving || !name.trim() || items.length === 0}
         >
-          {saving ? "Saving..." : "Save meal"}
+          {saving ? "Saving..." : preset ? "Save changes" : "Save meal"}
         </button>
       </div>
 
       {pickerOpen && (
-        <div className="modal-overlay" style={{ zIndex: 70 }} onClick={() => setPickerOpen(false)}>
-          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add food</h3>
-              <button className="btn btn-ghost" onClick={() => setPickerOpen(false)}>
-                <IconClose className="icon" />
-              </button>
-            </div>
-            <input
-              type="text"
-              placeholder="Search your foods..."
-              value={pickerQuery}
-              onChange={(e) => setPickerQuery(e.target.value)}
-              autoFocus
-              style={{ width: "100%", marginBottom: 12 }}
-            />
-            {pickerResults.length === 0 ? (
-              <p className="text-muted" style={{ fontSize: 13, marginBottom: 12 }}>
-                No matches.
-              </p>
-            ) : (
-              pickerResults.map((f) => (
-                <div className="list-row" style={{ cursor: "pointer" }} key={f.id} onClick={() => addItem(f)}>
-                  <div className="list-row-main">
-                    <div className="list-row-title">{f.name}</div>
-                    <div className="list-row-sub">
-                      <Energy kcal={f.calories} /> /100{f.serving_unit === "ml" ? "ml" : "g"}
-                    </div>
-                  </div>
-                  <div className="list-row-actions">
-                    <button className="btn btn-primary btn-icon" tabIndex={-1}>
-                      <IconPlus className="icon" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-            <button className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={() => setPickerOpen(false)}>
-              Done
-            </button>
-          </div>
-        </div>
+        <FoodSearchModal
+          mode="picker"
+          foods={foods}
+          servingsByFood={servingsByFood}
+          onClose={() => setPickerOpen(false)}
+          onPick={(food, serving, qty) => addItem(food, serving, qty)}
+          onFoodCreated={onFoodCreated}
+          onCreateFood={onCreateFood}
+        />
       )}
 
       {showCustomForm && (
@@ -225,7 +235,10 @@ export default function MealBuilder({ foods, onClose, onCreateFood, onSave }: Pr
           onClose={() => setShowCustomForm(false)}
           onSave={async (input) => {
             const food = await onCreateFood(input);
-            addItem(food);
+            const { data } = await supabase.from("food_servings").select("*").eq("food_id", food.id);
+            const serving = defaultServing((data ?? []) as FoodServing[]);
+            addItem(food, serving);
+            setShowCustomForm(false);
           }}
         />
       )}

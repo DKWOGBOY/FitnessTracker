@@ -22,7 +22,10 @@ export default function WaterTracker({ date, target }: Props) {
   const [value, setValue] = useState(litres);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
   const draggingRef = useRef(false);
+  const pendingRef = useRef(litres);
 
   const bubbles = useMemo<Bubble[]>(
     () =>
@@ -37,6 +40,7 @@ export default function WaterTracker({ date, target }: Props) {
 
   useEffect(() => {
     setValue(litres);
+    pendingRef.current = litres;
   }, [litres]);
 
   useEffect(() => {
@@ -45,18 +49,23 @@ export default function WaterTracker({ date, target }: Props) {
     };
   }, []);
 
-  function handleChange(next: number) {
-    const clamped = Math.max(0, Math.min(target, next));
-    setValue(clamped);
+  function applyVisual(v: number) {
+    const pct = target > 0 ? Math.min(100, Math.max(0, (v / target) * 100)) : 0;
+    if (fillRef.current) fillRef.current.style.width = `${pct}%`;
+    if (countRef.current) countRef.current.textContent = `${v.toFixed(1)}/${target.toFixed(1)}`;
+  }
+
+  function commit(next: number) {
+    setValue(next);
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
-      setLitres(clamped);
+      setLitres(next);
     }, 300);
   }
 
   function valueFromClientX(clientX: number): number {
     const el = barRef.current;
-    if (!el) return value;
+    if (!el) return pendingRef.current;
     const rect = el.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const raw = pct * target;
@@ -66,19 +75,27 @@ export default function WaterTracker({ date, target }: Props) {
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     draggingRef.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
-    handleChange(valueFromClientX(e.clientX));
+    if (fillRef.current) fillRef.current.style.transition = "none";
+    const next = valueFromClientX(e.clientX);
+    pendingRef.current = next;
+    applyVisual(next);
   }
 
   function handlePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (!draggingRef.current) return;
-    handleChange(valueFromClientX(e.clientX));
+    const next = valueFromClientX(e.clientX);
+    pendingRef.current = next;
+    applyVisual(next);
   }
 
   function handlePointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
     draggingRef.current = false;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
+    if (fillRef.current) fillRef.current.style.transition = "";
+    commit(pendingRef.current);
   }
 
   const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0;
@@ -96,7 +113,7 @@ export default function WaterTracker({ date, target }: Props) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div className="water-tracker-bar-fill" style={{ width: `${pct}%` }}>
+        <div className="water-tracker-bar-fill" ref={fillRef} style={{ width: `${pct}%` }}>
           {bubbles.map((b, i) => (
             <span
               key={i}
@@ -112,7 +129,7 @@ export default function WaterTracker({ date, target }: Props) {
           ))}
         </div>
       </div>
-      <span className="water-tracker-count">
+      <span className="water-tracker-count" ref={countRef}>
         {value.toFixed(1)}/{target.toFixed(1)}
       </span>
     </div>

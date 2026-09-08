@@ -3,7 +3,7 @@ import { useFoodLogs } from "../../hooks/useFoodLogs";
 import { useTargets } from "../../hooks/useTargets";
 import { useMealPresets } from "../../hooks/useMealPresets";
 import { useStreak } from "../../hooks/useStreak";
-import { MEALS, macrosForQuantity, sumMacros, type Meal } from "../../lib/types";
+import { MEALS, macrosForLog, sumMacros, type Meal } from "../../lib/types";
 import type { UnitSystem } from "../../lib/units";
 import DateNav from "./DateNav";
 import DailySummary from "./DailySummary";
@@ -11,7 +11,6 @@ import MealSection from "./MealSection";
 import WeightCard from "./WeightCard";
 import WaterTracker from "./WaterTracker";
 import ExerciseCard from "./ExerciseCard";
-import PresetBar from "./PresetBar";
 import FoodSearchModal from "./FoodSearchModal";
 
 interface Props {
@@ -31,27 +30,20 @@ export default function LogTab({
   onModalMealChange,
   waterTarget,
 }: Props) {
-  const { foods, refresh: refreshFoods } = useFoods();
-  const { logs, addLog, updateLog, deleteLog } = useFoodLogs(date);
+  const { foods, servingsByFood, addFood, refresh: refreshFoods } = useFoods();
+  const { logs, addLog, updateLog, deleteLog, refresh: refreshLogs } = useFoodLogs(date);
   const { targetForDate } = useTargets();
-  const { presets, deletePreset } = useMealPresets();
+  const { presets, savePreset, updatePreset, deletePreset } = useMealPresets();
   const { streak } = useStreak(logs.length);
 
-  const consumed = sumMacros(logs.map((l) => macrosForQuantity(l.food, l.quantity)));
+  const consumed = sumMacros(logs.map((l) => macrosForLog(l)));
   const target = targetForDate(date);
-
-  async function handleQuickAddPreset(preset: (typeof presets)[number]) {
-    if (!preset.food_id) return;
-    await addLog(preset.food_id, preset.default_meal, 1);
-  }
 
   return (
     <div>
       <DailySummary consumed={consumed} target={target} streak={streak} />
 
       <DateNav date={date} onChange={onDateChange} />
-
-      <PresetBar presets={presets} onQuickAdd={handleQuickAddPreset} onDelete={deletePreset} />
 
       <WaterTracker date={date} target={waterTarget} />
 
@@ -63,6 +55,13 @@ export default function LogTab({
           onAddClick={() => onModalMealChange(meal)}
           onEditLog={(id, changes) => updateLog(id, changes)}
           onDelete={deleteLog}
+          foods={foods}
+          servingsByFood={servingsByFood}
+          presets={presets}
+          onCreateFood={addFood}
+          onFoodCreated={() => refreshFoods()}
+          onUpdatePreset={updatePreset}
+          onMealEdited={() => refreshLogs()}
         />
       ))}
 
@@ -75,14 +74,17 @@ export default function LogTab({
       {modalMeal && (
         <FoodSearchModal
           foods={foods}
+          servingsByFood={servingsByFood}
           presets={presets}
           initialMeal={modalMeal}
           onClose={() => onModalMealChange(null)}
-          onAdd={async (foodId, meal, quantity) => {
-            await addLog(foodId, meal, quantity);
+          onAdd={async (foodId, meal, quantity, servingId) => {
+            await addLog(foodId, meal, quantity, servingId);
           }}
           onFoodCreated={() => refreshFoods()}
           onDeletePreset={deletePreset}
+          onCreateFood={addFood}
+          onSaveMeal={savePreset}
         />
       )}
     </div>

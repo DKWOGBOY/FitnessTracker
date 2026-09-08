@@ -1,0 +1,16 @@
+{
+  "name": "biteTrack",
+  "short_name": "biteTrack",
+  "description": "Personal food and weight tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5EFE6",
+  "theme_color": "#C1602E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

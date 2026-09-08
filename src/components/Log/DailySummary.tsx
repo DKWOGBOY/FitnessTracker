@@ -14,13 +14,11 @@ const RING_TRACK = "rgba(255, 255, 255, 0.28)";
 
 function MacroRing({
   label,
-  dotColor,
   consumed,
   target,
   unit,
 }: {
   label: string;
-  dotColor: string;
   consumed: number;
   target: number | null;
   unit: string;
@@ -37,10 +35,8 @@ function MacroRing({
           </span>
         </div>
       </div>
-      <span className="summary-hero-macro-label">
-        <span className="macro-dot" style={{ background: dotColor }} />
-        {label}
-      </span>
+      <span className="summary-hero-macro-label">{label}</span>
+      <span className="summary-hero-macro-target">{target !== null ? `/${Math.round(target)}${unit}` : "no target"}</span>
     </div>
   );
 }
@@ -79,27 +75,9 @@ export default function DailySummary({ consumed, target, streak }: Props) {
       </div>
 
       <div className="macro-ring-row">
-        <MacroRing
-          label="Protein"
-          dotColor="var(--color-protein)"
-          consumed={consumed.protein_g}
-          target={target?.protein_g ?? null}
-          unit="g"
-        />
-        <MacroRing
-          label="Carbs"
-          dotColor="var(--color-carbs)"
-          consumed={consumed.carbs_g}
-          target={target?.carbs_g ?? null}
-          unit="g"
-        />
-        <MacroRing
-          label="Fat"
-          dotColor="var(--color-fat)"
-          consumed={consumed.fat_g}
-          target={target?.fat_g ?? null}
-          unit="g"
-        />
+        <MacroRing label="Protein" consumed={consumed.protein_g} target={target?.protein_g ?? null} unit="g" />
+        <MacroRing label="Carbs" consumed={consumed.carbs_g} target={target?.carbs_g ?? null} unit="g" />
+        <MacroRing label="Fat" consumed={consumed.fat_g} target={target?.fat_g ?? null} unit="g" />
       </div>
     </div>
   );

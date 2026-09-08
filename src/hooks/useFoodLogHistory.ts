@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import type { Food } from "../lib/types";
+import type { Food, FoodServing } from "../lib/types";
 
 export interface FoodHistoryEntry {
   food: Food;
   count: number;
   lastQuantity: number;
+  lastServing: FoodServing | null;
   lastLoggedAt: string;
 }
 
@@ -21,7 +22,7 @@ export function useFoodLogHistory() {
     try {
       const { data } = await supabase
         .from("food_logs")
-        .select("food_id, quantity, created_at, food:foods(*)")
+        .select("food_id, quantity, created_at, food:foods(*), serving:food_servings(*)")
         .order("created_at", { ascending: false })
         .limit(HISTORY_SCAN_LIMIT);
 
@@ -31,6 +32,7 @@ export function useFoodLogHistory() {
         quantity: number;
         created_at: string;
         food: Food | null;
+        serving: FoodServing | null;
       }[]) {
         if (!row.food) continue;
         const existing = byFood.get(row.food_id);
@@ -41,6 +43,7 @@ export function useFoodLogHistory() {
             food: row.food,
             count: 1,
             lastQuantity: row.quantity,
+            lastServing: row.serving,
             lastLoggedAt: row.created_at,
           });
         }

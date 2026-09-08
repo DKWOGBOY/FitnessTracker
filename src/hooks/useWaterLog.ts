@@ -25,13 +25,11 @@ export function useWaterLog(date: string) {
 
   async function setLitres(value: number) {
     setLitresState(value);
-    const { data: userData } = await supabase.auth.getUser();
+    // user_id defaults to auth.uid() server-side - no need to fetch/send it,
+    // but the (user_id, log_date) unique constraint still needs naming here.
     const { error } = await supabase
       .from("water_logs")
-      .upsert(
-        { log_date: date, litres: value, user_id: userData.user?.id },
-        { onConflict: "user_id,log_date" },
-      );
+      .upsert({ log_date: date, litres: value }, { onConflict: "user_id,log_date" });
     if (error) throw error;
   }
 

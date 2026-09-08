@@ -1,17 +1,34 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { macrosForQuantity, sumMacros, type FoodLogWithFood, type Meal } from "../../lib/types";
+import {
+  macrosForLog,
+  sumMacros,
+  type Food,
+  type FoodInput,
+  type FoodLogWithFood,
+  type FoodServing,
+  type Meal,
+  type MealPresetWithItems,
+} from "../../lib/types";
 import { IconPlus } from "../icons";
 import Energy from "../Energy";
 import SwipeableRow from "./SwipeableRow";
 import EditLogModal from "./EditLogModal";
+import type { PresetItemInput } from "../../hooks/useMealPresets";
 
 interface Props {
   meal: Meal;
   logs: FoodLogWithFood[];
   onAddClick: () => void;
-  onEditLog: (id: string, changes: { quantity: number; created_at: string }) => Promise<void>;
+  onEditLog: (id: string, changes: { quantity: number; serving_id: string | null; created_at: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  foods: Food[];
+  servingsByFood: Map<string, FoodServing[]>;
+  presets: MealPresetWithItems[];
+  onCreateFood: (input: FoodInput) => Promise<Food>;
+  onFoodCreated: (food: Food) => void;
+  onUpdatePreset: (id: string, name: string, items: PresetItemInput[]) => Promise<void>;
+  onMealEdited: () => void;
 }
 
 const MEAL_LABELS: Record<Meal, string> = {
@@ -21,10 +38,23 @@ const MEAL_LABELS: Record<Meal, string> = {
   snack: "Snacks",
 };
 
-export default function MealSection({ meal, logs, onAddClick, onEditLog, onDelete }: Props) {
+export default function MealSection({
+  meal,
+  logs,
+  onAddClick,
+  onEditLog,
+  onDelete,
+  foods,
+  servingsByFood,
+  presets,
+  onCreateFood,
+  onFoodCreated,
+  onUpdatePreset,
+  onMealEdited,
+}: Props) {
   const [editingLog, setEditingLog] = useState<FoodLogWithFood | null>(null);
 
-  const totals = sumMacros(logs.map((l) => macrosForQuantity(l.food, l.quantity)));
+  const totals = sumMacros(logs.map((l) => macrosForLog(l)));
 
   if (logs.length === 0) {
     return (
@@ -60,7 +90,7 @@ export default function MealSection({ meal, logs, onAddClick, onEditLog, onDelet
       </div>
 
       {logs.map((log) => {
-        const m = macrosForQuantity(log.food, log.quantity);
+        const m = macrosForLog(log);
         return (
           <SwipeableRow key={log.id} onTap={() => setEditingLog(log)} onDelete={() => onDelete(log.id)}>
             <div className="log-row">
@@ -73,7 +103,7 @@ export default function MealSection({ meal, logs, onAddClick, onEditLog, onDelet
                 </span>
               </div>
               <div className="list-row-sub">
-                {format(parseISO(log.created_at), "h:mm a")} · {log.quantity}× serving
+                {format(parseISO(log.created_at), "h:mm a")} · {log.quantity}× {log.serving?.label ?? `100 ${log.food.base_unit}`}
               </div>
             </div>
           </SwipeableRow>
@@ -92,6 +122,13 @@ export default function MealSection({ meal, logs, onAddClick, onEditLog, onDelet
           onClose={() => setEditingLog(null)}
           onSave={(changes) => onEditLog(editingLog.id, changes)}
           onDelete={() => onDelete(editingLog.id)}
+          foods={foods}
+          servingsByFood={servingsByFood}
+          presets={presets}
+          onCreateFood={onCreateFood}
+          onFoodCreated={onFoodCreated}
+          onUpdatePreset={onUpdatePreset}
+          onMealEdited={onMealEdited}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useFoods } from "../../hooks/useFoods";
 import { useMealPresets } from "../../hooks/useMealPresets";
-import type { Food } from "../../lib/types";
+import type { Food, MealPresetWithItems } from "../../lib/types";
 import FoodForm from "./FoodForm";
 import MealBuilder from "./MealBuilder";
 import { IconClose, IconPlus, IconStar } from "../icons";
@@ -10,13 +10,23 @@ import Energy from "../Energy";
 type View = "foods" | "meals";
 
 export default function FoodsTab() {
-  const { foods, loading, addFood, updateFood, deleteFood, toggleFrequent } = useFoods();
-  const { presets, loading: presetsLoading, savePreset, deletePreset } = useMealPresets();
+  const {
+    foods,
+    servingsByFood,
+    loading,
+    addFood,
+    updateFood,
+    deleteFood,
+    toggleFrequent,
+    refresh: refreshFoods,
+  } = useFoods();
+  const { presets, loading: presetsLoading, savePreset, updatePreset, deletePreset } = useMealPresets();
   const [view, setView] = useState<View>("foods");
   const [query, setQuery] = useState("");
   const [editingFood, setEditingFood] = useState<Food | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showMealBuilder, setShowMealBuilder] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<MealPresetWithItems | null>(null);
 
   const filteredFoods = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,7 +83,7 @@ export default function FoodsTab() {
                 <div className="list-row-main">
                   <div className="list-row-title">{f.name}</div>
                   <div className="list-row-sub">
-                    <Energy kcal={f.calories} /> /100{f.serving_unit === "ml" ? "ml" : "g"} · P{" "}
+                    <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
                     {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g ·{" "}
                     <span className="badge-muted badge">{f.source}</span>
                   </div>
@@ -108,7 +118,7 @@ export default function FoodsTab() {
       ) : (
         <div className="card">
           {filteredPresets.map((p) => (
-            <div className="list-row" key={p.id}>
+            <div className="list-row" style={{ cursor: "pointer" }} key={p.id} onClick={() => setEditingPreset(p)}>
               <div className="list-row-main">
                 <div className="list-row-title">{p.name}</div>
                 <div className="list-row-sub">
@@ -123,7 +133,13 @@ export default function FoodsTab() {
                 </div>
               </div>
               <div className="list-row-actions">
-                <button className="btn btn-ghost" onClick={() => deletePreset(p.id)}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePreset(p.id);
+                  }}
+                >
                   <IconClose className="icon" />
                 </button>
               </div>
@@ -133,23 +149,44 @@ export default function FoodsTab() {
       )}
 
       {showAdd && (
-        <FoodForm food={null} onClose={() => setShowAdd(false)} onSave={(input) => addFood(input).then(() => {})} />
+        <FoodForm
+          food={null}
+          onClose={() => setShowAdd(false)}
+          onSave={(input, extraServings) => addFood(input, extraServings).then(() => {})}
+        />
       )}
       {editingFood && (
         <FoodForm
           food={editingFood}
+          existingServings={servingsByFood.get(editingFood.id) ?? []}
           onClose={() => setEditingFood(null)}
-          onSave={(input) => updateFood(editingFood.id, input)}
+          onSave={(input, extraServings) => updateFood(editingFood.id, input, extraServings)}
         />
       )}
       {showMealBuilder && (
         <MealBuilder
           foods={foods}
+          servingsByFood={servingsByFood}
           onClose={() => setShowMealBuilder(false)}
           onCreateFood={addFood}
+          onFoodCreated={() => refreshFoods()}
           onSave={async (name, defaultMeal, items) => {
             await savePreset(name, defaultMeal, items);
             setShowMealBuilder(false);
+          }}
+        />
+      )}
+      {editingPreset && (
+        <MealBuilder
+          foods={foods}
+          servingsByFood={servingsByFood}
+          preset={editingPreset}
+          onClose={() => setEditingPreset(null)}
+          onCreateFood={addFood}
+          onFoodCreated={() => refreshFoods()}
+          onUpdate={async (id, name, items) => {
+            await updatePreset(id, name, items);
+            setEditingPreset(null);
           }}
         />
       )}

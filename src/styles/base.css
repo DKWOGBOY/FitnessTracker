@@ -6,6 +6,18 @@ html,
 body {
   margin: 0;
   padding: 0;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -13,10 +25,20 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 h1,
@@ -60,7 +82,7 @@ a {
 }
 
 .tab-page {
-  padding-top: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
 }
 
 .brand {

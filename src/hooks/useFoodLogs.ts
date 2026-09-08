@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { FoodLogWithFood, Meal } from "../lib/types";
 
+const SELECT = "*, food:foods(*), serving:food_servings(*)";
+
 export function useFoodLogs(date: string) {
   const [logs, setLogs] = useState<FoodLogWithFood[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ export function useFoodLogs(date: string) {
     try {
       const { data, error: err } = await supabase
         .from("food_logs")
-        .select("*, food:foods(*)")
+        .select(SELECT)
         .eq("log_date", date)
         .order("created_at", { ascending: true });
       if (err) setError(err.message);
@@ -28,29 +30,35 @@ export function useFoodLogs(date: string) {
     refresh();
   }, [refresh]);
 
-  async function addLog(foodId: string, meal: Meal, quantity: number) {
-    const { data: userData } = await supabase.auth.getUser();
-    const { error: err } = await supabase.from("food_logs").insert({
-      food_id: foodId,
-      log_date: date,
-      meal,
-      quantity,
-      user_id: userData.user?.id,
-    });
+  async function addLog(foodId: string, meal: Meal, quantity: number, servingId: string | null) {
+    // user_id defaults to auth.uid() server-side - no need to fetch/send it.
+    const { data, error: err } = await supabase
+      .from("food_logs")
+      .insert({ food_id: foodId, log_date: date, meal, quantity, serving_id: servingId })
+      .select(SELECT)
+      .single();
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => [...prev, data as unknown as FoodLogWithFood]);
   }
 
-  async function updateLog(id: string, changes: { quantity?: number; meal?: Meal; created_at?: string }) {
-    const { error: err } = await supabase.from("food_logs").update(changes).eq("id", id);
+  async function updateLog(
+    id: string,
+    changes: { quantity?: number; meal?: Meal; created_at?: string; serving_id?: string | null },
+  ) {
+    const { data, error: err } = await supabase
+      .from("food_logs")
+      .update(changes)
+      .eq("id", id)
+      .select(SELECT)
+      .single();
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => prev.map((l) => (l.id === id ? (data as unknown as FoodLogWithFood) : l)));
   }
 
   async function deleteLog(id: string) {
     const { error: err } = await supabase.from("food_logs").delete().eq("id", id);
     if (err) throw err;
-    await refresh();
+    setLogs((prev) => prev.filter((l) => l.id !== id));
   }
 
   return { logs, loading, error, refresh, addLog, updateLog, deleteLog };

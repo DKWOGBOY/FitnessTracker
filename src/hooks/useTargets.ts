@@ -24,12 +24,12 @@ export function useTargets() {
   }, [refresh]);
 
   async function addTarget(input: Omit<Target, "id" | "user_id">) {
-    const { data: userData } = await supabase.auth.getUser();
-    const { error: err } = await supabase
-      .from("targets")
-      .insert({ ...input, user_id: userData.user?.id });
+    // user_id defaults to auth.uid() server-side - no need to fetch/send it.
+    const { data, error: err } = await supabase.from("targets").insert(input).select().single();
     if (err) throw err;
-    await refresh();
+    setTargets((prev) =>
+      [...prev, data as Target].sort((a, b) => a.effective_date.localeCompare(b.effective_date)),
+    );
   }
 
   /** Returns the target row effective on the given date (most recent row with effective_date <= date). */

@@ -106,6 +106,7 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 14px;
+  min-width: 0;
 }
 
 .field label {
@@ -267,25 +268,11 @@ textarea:focus {
   }
 }
 
-.macro-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.macro-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
 .summary-hero {
   background: linear-gradient(160deg, var(--color-primary), var(--color-primary-hover));
   color: #fff8f2;
   margin: 0 -16px 20px;
-  padding: 20px 20px 28px;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -341,14 +328,68 @@ textarea:focus {
 }
 
 .summary-hero-macro-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  display: block;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.9;
+}
+
+.summary-hero-macro-target {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-top: 1px;
+}
+
+.meal-totals-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.meal-totals-kcal {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.meal-totals-kcal-unit {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.meal-totals-cols {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+}
+
+.meal-totals-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.meal-totals-pct {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meal-totals-g {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.meal-totals-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
 }
 
 .ring-wrap {
@@ -610,13 +651,14 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 16px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
   flex-shrink: 0;
 }
 
 .screen-back-btn {
   position: absolute;
   left: 16px;
+  bottom: 14px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -721,12 +763,190 @@ textarea:focus {
 }
 
 .btn-add-circle {
-  transition: background 0.15s ease, color 0.15s ease;
+  position: relative;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-add-circle:active {
+  transform: scale(0.92);
+  transition-duration: 0.08s;
 }
 
 .btn-add-circle.added {
   background: var(--color-success-soft);
   color: var(--color-success);
+}
+
+.btn-add-circle.just-added .icon {
+  animation: quick-add-morph 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes quick-add-morph {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.quick-add-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  pointer-events: none;
+  animation: quick-add-ripple 0.45s ease-out forwards;
+}
+
+@keyframes quick-add-ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.quick-add-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.quick-add-confetti .dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: quick-add-confetti 0.4s ease-out forwards;
+}
+
+.quick-add-confetti .c1 {
+  background: var(--color-protein);
+  --tx: -18px;
+  --ty: -14px;
+  animation-delay: 0.02s;
+}
+
+.quick-add-confetti .c2 {
+  background: var(--color-carbs);
+  --tx: 16px;
+  --ty: -16px;
+  animation-delay: 0.05s;
+}
+
+.quick-add-confetti .c3 {
+  background: var(--color-fat);
+  --tx: -14px;
+  --ty: 16px;
+  animation-delay: 0.03s;
+}
+
+.quick-add-confetti .c4 {
+  background: var(--color-primary);
+  --tx: 18px;
+  --ty: 14px;
+  animation-delay: 0.06s;
+}
+
+@keyframes quick-add-confetti {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--tx), var(--ty)) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.macro-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.macro-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  animation: macro-pill-in 0.2s ease forwards;
+}
+
+.macro-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@keyframes macro-pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.log-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-modal);
+  z-index: 80;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: toast-in-out 1.4s ease forwards;
+}
+
+@keyframes toast-in-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
 }
 
 .error-text {
