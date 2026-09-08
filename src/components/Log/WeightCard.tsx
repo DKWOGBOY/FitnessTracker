@@ -6,9 +6,12 @@ import { IconClose } from "../icons";
 interface Props {
   date: string;
   unitSystem: UnitSystem;
+  /** Called after any add/update/delete - lets a parent showing a separate
+   * chart over a date range (e.g. Trends) refresh it in step. */
+  onChange?: () => void;
 }
 
-export default function WeightCard({ date, unitSystem }: Props) {
+export default function WeightCard({ date, unitSystem, onChange }: Props) {
   const { logs, addWeight, updateWeight, deleteWeight } = useWeightLogsForDate(date);
   const [value, setValue] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,6 +31,7 @@ export default function WeightCard({ date, unitSystem }: Props) {
         await addWeight(kg);
       }
       setValue("");
+      onChange?.();
     } finally {
       setSaving(false);
     }
@@ -39,9 +43,7 @@ export default function WeightCard({ date, unitSystem }: Props) {
   }
 
   return (
-    <div className="card">
-      <h3 style={{ marginBottom: 12 }}>Weight</h3>
-
+    <>
       {logs.length > 0 && (
         <div className="stack-gap-sm" style={{ marginBottom: 12 }}>
           {logs.map((w) => (
@@ -54,7 +56,10 @@ export default function WeightCard({ date, unitSystem }: Props) {
                 <button className="btn btn-ghost" onClick={() => startEdit(w.id, w.weight_kg)}>
                   Edit
                 </button>
-                <button className="btn btn-ghost" onClick={() => deleteWeight(w.id)}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => deleteWeight(w.id).then(() => onChange?.())}
+                >
                   <IconClose className="icon" />
                 </button>
               </div>
@@ -89,6 +94,6 @@ export default function WeightCard({ date, unitSystem }: Props) {
           </button>
         )}
       </form>
-    </div>
+    </>
   );
 }

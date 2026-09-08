@@ -6,22 +6,21 @@ import { useStreak } from "../../hooks/useStreak";
 import { useWaterLog } from "../../hooks/useWaterLog";
 import type { LogPageInitialData } from "../../hooks/useLogPageInitialData";
 import { MEALS, macrosForLog, sumMacros, type Meal } from "../../lib/types";
-import type { UnitSystem } from "../../lib/units";
 import DateNav from "./DateNav";
 import DailySummary from "./DailySummary";
 import MealSection from "./MealSection";
-import WeightCard from "./WeightCard";
+import WeighInReminder from "./WeighInReminder";
 import WaterTracker from "./WaterTracker";
 import ExerciseCard from "./ExerciseCard";
 import FoodSearchModal from "./FoodSearchModal";
 
 interface Props {
-  unitSystem: UnitSystem;
   date: string;
   onDateChange: (date: string) => void;
   modalMeal: Meal | null;
   onModalMealChange: (meal: Meal | null) => void;
   waterTarget: number;
+  onGoToTrends: () => void;
   /** Already-fetched data from the Log page's single consolidated RPC, or
    * null if it's unavailable (migration not applied yet, or the call
    * failed) - each hook below falls back to fetching independently. */
@@ -29,12 +28,12 @@ interface Props {
 }
 
 export default function LogTabContent({
-  unitSystem,
   date,
   onDateChange,
   modalMeal,
   onModalMealChange,
   waterTarget,
+  onGoToTrends,
   initialData,
 }: Props) {
   const { foods, servingsByFood, addFood, refresh: refreshFoods } = useFoods(
@@ -57,6 +56,8 @@ export default function LogTabContent({
   return (
     <div className="page-transition-in">
       <DailySummary consumed={consumed} target={target} streak={streak} />
+
+      <WeighInReminder onGoToTrends={onGoToTrends} />
 
       <DateNav date={date} onChange={onDateChange} />
 
@@ -82,9 +83,6 @@ export default function LogTabContent({
 
       <div className="section-title">Exercise</div>
       <ExerciseCard date={date} />
-
-      <div className="section-title">Weight</div>
-      <WeightCard date={date} unitSystem={unitSystem} />
 
       {modalMeal && (
         <FoodSearchModal

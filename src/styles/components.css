@@ -268,6 +268,27 @@ textarea:focus {
   color: var(--color-text-muted);
 }
 
+.weigh-in-reminder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.weigh-in-reminder .icon {
+  flex-shrink: 0;
+}
+
 .progress-bar {
   height: 8px;
   border-radius: 999px;
@@ -1017,7 +1038,15 @@ textarea:focus {
 }
 
 .page-transition-in {
-  animation: page-fade-in 0.16s ease-out both;
+  /* "backwards" (not "both"/"forwards") deliberately - once the entrance
+     plays, `transform` must fully revert rather than freeze at
+     translateY(0). A lingering transform on this ancestor - even a 0px
+     one - creates a new containing block for any `position: fixed`
+     descendant (like a full-screen .screen-overlay), which silently
+     shrinks it down to this page's own content height instead of the
+     viewport. That was clipping the meal builder's bottom buttons off
+     screen on shorter pages (e.g. Foods tab with few items). */
+  animation: page-fade-in 0.16s ease-out backwards;
 }
 
 @keyframes page-fade-in {
@@ -1035,6 +1064,141 @@ textarea:focus {
   .page-transition-in {
     animation: none;
   }
+}
+
+.weekly-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 56px;
+  width: 148px;
+  flex-shrink: 0;
+}
+
+.weekly-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  height: 100%;
+}
+
+.weekly-bar-track {
+  flex: 1;
+  width: 8px;
+  min-height: 8px;
+  background: var(--color-bg-alt);
+  border-radius: 999px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.weekly-bar-fill {
+  width: 100%;
+  min-height: 10px;
+  border-radius: 999px;
+  transition: height 0.4s ease-out;
+}
+
+.weekly-bar-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.overview-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.overview-card + .overview-card {
+  margin-top: 12px;
+}
+
+.overview-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.overview-card-row + .overview-card-row {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.overview-card-macro-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.overview-card-avg-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.overview-card-avg-value {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.weight-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.weight-reminder-caption {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
+
+.weight-log-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-water-soft);
+  color: var(--color-water);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.macro-legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.macro-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.macro-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
 }
 
 .error-text {

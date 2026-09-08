@@ -1,4 +1,12 @@
-import { addDays, format, parseISO, isToday as isTodayFns, isYesterday } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  parseISO,
+  startOfWeek,
+  isToday as isTodayFns,
+  isYesterday,
+} from "date-fns";
 
 export const DATE_FMT = "yyyy-MM-dd";
 
@@ -19,4 +27,14 @@ export function formatDateLabel(dateStr: string): string {
 
 export function daysAgoStr(days: number): string {
   return format(addDays(new Date(), -days), DATE_FMT);
+}
+
+export function daysBetween(fromDateStr: string, toDateStr: string): number {
+  return differenceInCalendarDays(parseISO(toDateStr), parseISO(fromDateStr));
+}
+
+/** Monday of the calendar week containing dateStr - the weekly overview
+ * bars are aligned to Mon-Sun rather than a rolling "last 7 days" window. */
+export function mondayOfWeek(dateStr: string): string {
+  return format(startOfWeek(parseISO(dateStr), { weekStartsOn: 1 }), DATE_FMT);
 }

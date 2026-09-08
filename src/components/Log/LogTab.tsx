@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { useLogPageInitialData } from "../../hooks/useLogPageInitialData";
 import type { Meal } from "../../lib/types";
-import type { UnitSystem } from "../../lib/units";
 import LogTabContent from "./LogTabContent";
 
 interface Props {
-  unitSystem: UnitSystem;
   date: string;
   onDateChange: (date: string) => void;
   modalMeal: Meal | null;
   onModalMealChange: (meal: Meal | null) => void;
   waterTarget: number;
+  onGoToTrends: () => void;
 }
 
 export default function LogTab(props: Props) {

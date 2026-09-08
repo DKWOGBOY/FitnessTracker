@@ -1,86 +1,34 @@
-import { useMemo, useState } from "react";
-import { useWeightLogsRange } from "../../hooks/useWeightLogs";
-import { useFoodLogsRange } from "../../hooks/useFoodLogsRange";
-import { useTargets } from "../../hooks/useTargets";
-import { daysAgoStr } from "../../lib/dates";
+import { useState } from "react";
 import type { UnitSystem } from "../../lib/units";
-import WeightChart from "./WeightChart";
-import CaloriesChart from "./CaloriesChart";
-import MacrosChart from "./MacrosChart";
+import CalorieOverviewCard from "./CalorieOverviewCard";
+import MacroOverviewCard from "./MacroOverviewCard";
+import WeightOverviewCard from "./WeightOverviewCard";
+import CalorieDetail from "./CalorieDetail";
+import MacroDetail from "./MacroDetail";
+import WeightDetail from "./WeightDetail";
 
-type Range = "7" | "30" | "90" | "all";
-
-const RANGE_LABELS: Record<Range, string> = { "7": "7D", "30": "30D", "90": "90D", all: "All" };
+type Detail = "calories" | "macros" | "weight" | null;
 
 export default function TrendsTab({ unitSystem }: { unitSystem: UnitSystem }) {
-  const [range, setRange] = useState<Range>("30");
-
-  const fromDate = useMemo(() => {
-    if (range === "all") return null;
-    return daysAgoStr(parseInt(range, 10));
-  }, [range]);
-
-  const { logs: weightLogs, loading: weightLoading } = useWeightLogsRange(fromDate);
-  const { days, loading: foodLoading } = useFoodLogsRange(fromDate);
-  const { targets } = useTargets();
+  const [detail, setDetail] = useState<Detail>(null);
 
   return (
     <div className="tab-page page-transition-in">
-      <div className="flex-between" style={{ marginBottom: 16 }}>
-        <h2>Trends</h2>
-        <div className="range-toggle">
-          {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (
-            <button key={r} className={r === range ? "active" : ""} onClick={() => setRange(r)}>
-              {RANGE_LABELS[r]}
-            </button>
-          ))}
-        </div>
+      <h2 style={{ marginBottom: 16 }}>Progress</h2>
+
+      <CalorieOverviewCard onOpenDetail={() => setDetail("calories")} />
+
+      <div style={{ marginTop: 12 }}>
+        <MacroOverviewCard onOpenDetail={() => setDetail("macros")} />
       </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Weight</h3>
-        {weightLoading ? (
-          <Loading />
-        ) : weightLogs.length === 0 ? (
-          <Empty text="No weight entries in this range." />
-        ) : (
-          <WeightChart logs={weightLogs} unitSystem={unitSystem} />
-        )}
+      <div style={{ marginTop: 12 }}>
+        <WeightOverviewCard unitSystem={unitSystem} onOpenDetail={() => setDetail("weight")} />
       </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Calories vs target</h3>
-        {foodLoading ? (
-          <Loading />
-        ) : days.length === 0 ? (
-          <Empty text="No food logs in this range." />
-        ) : (
-          <CaloriesChart days={days} targets={targets} />
-        )}
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Macro breakdown</h3>
-        {foodLoading ? (
-          <Loading />
-        ) : days.length === 0 ? (
-          <Empty text="No food logs in this range." />
-        ) : (
-          <MacrosChart days={days} />
-        )}
-      </div>
+      {detail === "calories" && <CalorieDetail onClose={() => setDetail(null)} />}
+      {detail === "macros" && <MacroDetail onClose={() => setDetail(null)} />}
+      {detail === "weight" && <WeightDetail unitSystem={unitSystem} onClose={() => setDetail(null)} />}
     </div>
   );
-}
-
-function Loading() {
-  return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
-      <div className="spinner" />
-    </div>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <p className="empty-state">{text}</p>;
 }

@@ -17,7 +17,7 @@ type Tab = "log" | "trends" | "foods" | "settings";
 
 const TABS: { key: Tab; label: string; Icon: (props: { className?: string }) => JSX.Element }[] = [
   { key: "log", label: "Log", Icon: IconLog },
-  { key: "trends", label: "Trends", Icon: IconTrends },
+  { key: "trends", label: "Progress", Icon: IconTrends },
   { key: "foods", label: "Foods", Icon: IconFoods },
   { key: "settings", label: "Settings", Icon: IconSettings },
 ];
@@ -51,12 +51,12 @@ function AppShell() {
       <main className="app-main">
         {tab === "log" && (
           <LogTab
-            unitSystem={unitSystem}
             date={logDate}
             onDateChange={setLogDate}
             modalMeal={modalMeal}
             onModalMealChange={setModalMeal}
             waterTarget={waterTarget}
+            onGoToTrends={() => setTab("trends")}
           />
         )}
         {tab === "trends" && <TrendsTab unitSystem={unitSystem} />}

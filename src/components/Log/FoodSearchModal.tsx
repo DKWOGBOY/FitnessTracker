@@ -536,7 +536,7 @@ export default function FoodSearchModal({
 
       {toastVisible && (
         <div className="log-toast" key={toastKey}>
-          Food logged!
+          {isPicker ? "Added to meal!" : "Food logged!"}
         </div>
       )}
 

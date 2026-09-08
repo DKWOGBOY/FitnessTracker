@@ -56,6 +56,36 @@ export function useWeightLogsForDate(date: string) {
   return { logs, loading, refresh, addWeight, updateWeight, deleteWeight };
 }
 
+/** The very first and most recent weight entries across all dates - cheap
+ * (order+limit 1 each) way to get "Start"/"Current"/"days since" without
+ * fetching the whole history. Used by the weekly weigh-in reminder and the
+ * Weight overview card. */
+export function useWeightSummary() {
+  const [first, setFirst] = useState<WeightLog | null>(null);
+  const [last, setLast] = useState<WeightLog | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [{ data: firstData }, { data: lastData }] = await Promise.all([
+        supabase.from("weight_logs").select("*").order("log_date", { ascending: true }).limit(1).maybeSingle(),
+        supabase.from("weight_logs").select("*").order("log_date", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      setFirst((firstData as WeightLog) ?? null);
+      setLast((lastData as WeightLog) ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { first, last, loading, refresh };
+}
+
 /** Weight logs across a date range, for Trends. */
 export function useWeightLogsRange(fromDate: string | null) {
   const [logs, setLogs] = useState<WeightLog[]>([]);
