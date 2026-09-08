@@ -16,7 +16,9 @@ export const STANDARD_SERVINGS: Record<BaseUnit, { label: string; grams_equivale
     { label: "1 cup", grams_equivalent: 236.59 },
   ],
 };
-export type FoodSource = "off" | "usda" | "manual" | "meal";
+/** "off"/"usda" are historical - foods already imported from those sources
+ * before the switch to CalorieAPI keep them, but nothing creates them anymore. */
+export type FoodSource = "off" | "usda" | "calorieapi" | "manual" | "meal";
 export type Meal = "breakfast" | "lunch" | "dinner" | "snack";
 
 export const MEALS: Meal[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -33,6 +35,9 @@ export interface Food {
   source: FoodSource;
   source_id: string | null;
   is_frequent: boolean;
+  /** CalorieAPI-imported foods with curated macros + real household portions;
+   * false for manual entries and foods from other sources. Shown as a badge. */
+  is_verified: boolean;
   created_at: string;
 }
 

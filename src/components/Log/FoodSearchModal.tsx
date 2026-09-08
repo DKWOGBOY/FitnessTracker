@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import {
+  brandLabel,
   findExistingMatch,
-  rankCandidates,
-  searchOpenFoodFacts,
-  searchUsda,
+  getFoodDetails,
+  isVerifiedSuggestion,
+  suggestFoods,
+  type FoodSuggestion,
   type NormalizedFoodCandidate,
 } from "../../lib/foodApi";
 import { useFoodLogHistory, type FoodHistoryEntry } from "../../hooks/useFoodLogHistory";
@@ -40,8 +42,6 @@ interface Props {
   onCreateFood?: (input: FoodInput) => Promise<Food>;
   onSaveMeal?: (name: string, defaultMeal: Meal, items: PresetItemInput[]) => Promise<void>;
 }
-
-const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY as string | undefined;
 
 type ScreenTab = "history" | "meals" | "foods" | "search";
 
@@ -86,9 +86,10 @@ export default function FoodSearchModal({
 
   const { entries: history, loading: historyLoading } = useFoodLogHistory();
 
-  const [apiResults, setApiResults] = useState<NormalizedFoodCandidate[]>([]);
+  const [suggestions, setSuggestions] = useState<FoodSuggestion[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [fetchingSuggestionId, setFetchingSuggestionId] = useState<number | null>(null);
   const searchSeq = useRef(0);
 
   const [pendingCandidate, setPendingCandidate] = useState<NormalizedFoodCandidate | null>(null);
@@ -163,7 +164,7 @@ export default function FoodSearchModal({
     const trimmed = query.trim();
     if (trimmed.length < 2) {
       searchSeq.current++;
-      setApiResults([]);
+      setSuggestions([]);
       setApiLoading(false);
       setApiError(null);
       return;
@@ -172,43 +173,44 @@ export default function FoodSearchModal({
     setApiLoading(true);
     setApiError(null);
     const timer = setTimeout(async () => {
-      const [offResult, usdaResult] = await Promise.allSettled([
-        searchOpenFoodFacts(trimmed),
-        USDA_API_KEY ? searchUsda(trimmed, USDA_API_KEY) : Promise.resolve([]),
-      ]);
-      if (seq !== searchSeq.current) return; // a newer keystroke already superseded this search
-      const merged = [
-        ...(offResult.status === "fulfilled" ? offResult.value : []),
-        ...(usdaResult.status === "fulfilled" ? usdaResult.value : []),
-      ];
-      setApiResults(rankCandidates(merged, trimmed));
-      setApiError(offResult.status === "rejected" && usdaResult.status === "rejected" ? "Search failed." : null);
-      setApiLoading(false);
+      try {
+        const results = await suggestFoods(trimmed);
+        if (seq !== searchSeq.current) return; // a newer keystroke already superseded this search
+        setSuggestions(results);
+        setApiError(null);
+      } catch (err) {
+        if (seq !== searchSeq.current) return;
+        setSuggestions([]);
+        setApiError(err instanceof Error ? err.message : "Search failed.");
+      } finally {
+        if (seq === searchSeq.current) setApiLoading(false);
+      }
     }, 400);
     return () => clearTimeout(timer);
   }, [query, tab]);
 
-  async function pickCandidate(candidate: NormalizedFoodCandidate) {
+  async function pickSuggestion(suggestion: FoodSuggestion) {
     setApiError(null);
-    const match = await findExistingMatch(candidate);
-    if (match) {
-      setPendingCandidate(candidate);
-      setPendingMatch(match);
-    } else {
-      await createFoodFromCandidate(candidate);
+    setFetchingSuggestionId(suggestion.id);
+    try {
+      const candidate = await getFoodDetails(suggestion.id);
+      const match = await findExistingMatch(candidate);
+      if (match) {
+        setPendingCandidate(candidate);
+        setPendingMatch(match);
+      } else {
+        await createFoodFromCandidate(candidate);
+      }
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Couldn't load that food.");
+    } finally {
+      setFetchingSuggestionId(null);
     }
   }
 
   async function createFoodFromCandidate(candidate: NormalizedFoodCandidate) {
     // user_id defaults to auth.uid() server-side - no need to fetch/send it.
-    const {
-      extraServings,
-      isAustralian: _isAustralian,
-      isGeneric: _isGeneric,
-      popularity: _popularity,
-      recommended: _recommended,
-      ...foodInput
-    } = candidate;
+    const { extraServings, ...foodInput } = candidate;
     const { data, error } = await supabase.from("foods").insert(foodInput).select().single();
     if (error) {
       setApiError(error.message);
@@ -217,13 +219,14 @@ export default function FoodSearchModal({
     const food = data as Food;
     const existingLabels = new Set(extraServings.map((s) => s.label.trim().toLowerCase()));
     const standard = STANDARD_SERVINGS[food.base_unit].filter((s) => !existingLabels.has(s.label.toLowerCase()));
+    const hasDefault = extraServings.some((s) => s.is_default);
     const rows = [
       { food_id: food.id, label: `100 ${food.base_unit}`, grams_equivalent: 100, is_default: extraServings.length === 0 },
       ...extraServings.map((s, i) => ({
         food_id: food.id,
         label: s.label,
         grams_equivalent: s.grams_equivalent,
-        is_default: i === 0,
+        is_default: hasDefault ? !!s.is_default : i === 0,
       })),
       ...standard.map((s) => ({ food_id: food.id, label: s.label, grams_equivalent: s.grams_equivalent, is_default: false })),
     ];
@@ -385,7 +388,7 @@ export default function FoodSearchModal({
           <div>
             {q.length < 2 ? (
               <p className="text-muted" style={{ fontSize: 13 }}>
-                Keep typing above (at least 2 characters) to search Open Food Facts and USDA.
+                Keep typing above (at least 2 characters) to search.
               </p>
             ) : (
               <>
@@ -395,36 +398,38 @@ export default function FoodSearchModal({
                   </div>
                 )}
                 {apiError && <p className="error-text">{apiError}</p>}
-                {!apiLoading && !apiError && apiResults.length === 0 && (
+                {!apiLoading && !apiError && suggestions.length === 0 && (
                   <p className="text-muted" style={{ fontSize: 13 }}>
                     No results for "{query.trim()}".
                   </p>
                 )}
-                {apiResults.map((c) => (
-                  <div className="list-row" key={`${c.source}-${c.source_id}`}>
+                {suggestions.map((s) => (
+                  <div className="list-row" key={s.id}>
                     <div className="list-row-main">
                       <div className="list-row-title">
-                        {c.recommended && (
+                        {isVerifiedSuggestion(s) && (
                           <span
                             style={{ color: "var(--color-success, #2e9e5b)", verticalAlign: "middle", marginRight: 2 }}
-                            title="Recommended: standard match for this search"
+                            title="Verified: curated macros + real household portions"
                           >
                             <IconStar className="icon" filled />
                           </span>
                         )}
-                        {c.name}{" "}
-                        <span className="badge badge-muted" style={{ fontSize: 9, verticalAlign: "middle" }}>
-                          {c.source === "off" ? "Open Food Facts" : "USDA"}
-                        </span>
-                      </div>
-                      <div className="list-row-sub">
-                        <Energy kcal={c.calories} /> /100{c.base_unit} · P {Math.round(c.protein_g)}g C{" "}
-                        {Math.round(c.carbs_g)}g F {Math.round(c.fat_g)}g
+                        {s.name}
+                        {brandLabel(s) && (
+                          <span className="badge badge-muted" style={{ fontSize: 9, verticalAlign: "middle", marginLeft: 6 }}>
+                            {brandLabel(s)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="list-row-actions">
-                      <button className="btn btn-primary btn-icon" onClick={() => pickCandidate(c)}>
-                        <IconPlus className="icon" />
+                      <button
+                        className="btn btn-primary btn-icon"
+                        onClick={() => pickSuggestion(s)}
+                        disabled={fetchingSuggestionId === s.id}
+                      >
+                        {fetchingSuggestionId === s.id ? <div className="spinner" /> : <IconPlus className="icon" />}
                       </button>
                     </div>
                   </div>

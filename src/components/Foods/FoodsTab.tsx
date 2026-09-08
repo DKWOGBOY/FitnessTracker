@@ -86,6 +86,11 @@ export default function FoodsTab() {
                     <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
                     {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g ·{" "}
                     <span className="badge-muted badge">{f.source}</span>
+                    {f.is_verified && (
+                      <span className="badge" style={{ marginLeft: 4 }}>
+                        Verified
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="list-row-actions">

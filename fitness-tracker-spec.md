@@ -98,6 +98,8 @@
 
 ## Food data APIs
 
+**Superseded** — see `calorieapi-integration-spec.md`. The two-source setup described below (Open Food Facts + USDA) was replaced with a single CalorieAPI integration; foods already imported with `source = 'off'`/`'usda'` keep that value (nothing re-fetches or migrates them), but new imports use `source = 'calorieapi'`. Kept here for history.
+
 Two external sources, normalized into one internal shape before ever touching the `foods` table — this is the piece that prevents the mixed-API mess.
 
 **Sources**

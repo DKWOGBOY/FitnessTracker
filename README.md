@@ -36,11 +36,10 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-### 3. Get a USDA FoodData Central API key (free)
+### 3. Get a CalorieAPI key (free tier available)
 
-Sign up at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup) — used for
-generic/raw food search (chicken breast, rice, etc). Open Food Facts (packaged/branded foods)
-needs no key.
+Sign up at [calorieapi.com](https://calorieapi.com) — used for all food search (typeahead +
+full nutrition/portion lookup). Free tier: 10 requests/min.
 
 ### 4. Configure environment variables
 
@@ -53,8 +52,12 @@ cp .env.example .env
 ```
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_USDA_API_KEY=your-usda-api-key
+CALORIEAPI_KEY=your-calorieapi-key
 ```
+
+Note `CALORIEAPI_KEY` has no `VITE_` prefix — CalorieAPI doesn't support being called directly
+from browser JS (no CORS headers on its responses), so it's called from a Netlify Function
+(`netlify/functions/calorieapi.mts`) instead, and the key needs to stay server-side only.
 
 ### 5. Install and run locally
 
@@ -67,18 +70,27 @@ Open the printed localhost URL. Since Supabase Auth is required, create an accou
 sign-up screen (or use a magic link) — the app starts empty, no seed data. Head to **Settings**
 first to run the TDEE calculator and set your initial targets.
 
+Plain `npm run dev` (just Vite) won't run the Netlify Function, so food search will show a config
+error locally. To test search, run it through the Netlify CLI instead, which serves the frontend
+and the function together:
+
+```bash
+npx netlify dev
+```
+
 ## Deploying to Netlify
 
 1. Push this repo to GitHub/GitLab/Bitbucket.
 2. In Netlify: **Add new site → Import an existing project**, pick this repo.
 3. Build command `npm run build`, publish directory `dist` (already set in `netlify.toml`).
 4. In **Site configuration → Environment variables**, add `VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_ANON_KEY`, and `VITE_USDA_API_KEY` (same values as your `.env`).
+   `VITE_SUPABASE_ANON_KEY`, and `CALORIEAPI_KEY` (same values as your `.env`).
 5. Deploy.
 
-Because these are `VITE_`-prefixed vars, Vite inlines them into the client bundle at build time —
-that's expected for the Supabase anon key (it's safe to expose; RLS is what actually protects
-data). Don't put a service-role key here.
+`VITE_`-prefixed vars get inlined into the client bundle at build time — that's expected for the
+Supabase anon key (it's safe to expose; RLS is what actually protects data). `CALORIEAPI_KEY` is
+deliberately not prefixed, so it stays available only to the Netlify Function, never shipped to
+the browser. Don't put a service-role key in either place.
 
 ## Project structure
 
@@ -94,8 +106,12 @@ supabase/
 
 ## Notes on the food API layer
 
-Search order on the Log tab's "Add food": your personal `foods` table first, then optionally
-Open Food Facts, then optionally USDA. Anything picked from an external API is normalized to
-per-100g/100ml macros and a fixed serving-unit enum (`g`/`ml`/`oz`/`piece`), checked for an
-existing near-duplicate in your database, and only then written to `foods` — so it's fetched and
-normalized once, never again.
+The Log tab's "Search Online" tab uses a single provider, CalorieAPI (see
+`calorieapi-integration-spec.md`): typing debounces into a cheap typeahead `suggest` call, and only
+picking a result fetches the full nutrition/portion payload. Every call goes through
+`netlify/functions/calorieapi.mts`, not straight to CalorieAPI, since its API doesn't send CORS
+headers a browser needs to call it directly. Anything picked is normalized to per-100g macros plus
+its real household portions, checked for an existing near-duplicate in your database, and only
+then written to `foods`/`food_servings` — so it's fetched and normalized once, never again. Foods
+already imported from the previous Open Food Facts/USDA integration keep their old `source` value;
+nothing migrates or re-fetches them.

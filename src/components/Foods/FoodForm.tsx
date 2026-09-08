@@ -72,6 +72,7 @@ export default function FoodForm({ food, existingServings = [], onClose, onSave 
           source: food?.source ?? "manual",
           source_id: food?.source_id ?? null,
           is_frequent: isFrequent,
+          is_verified: food?.is_verified ?? false,
         },
         validRows.map((r) => ({
           label: r.label.trim(),
