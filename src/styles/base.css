@@ -76,6 +76,21 @@ a {
   padding-bottom: 104px;
 }
 
+/* Keeps the safe-area strip behind the status bar (time/battery icons)
+   painted the same orange as the Log page's hero header on every tab -
+   without this, switching to Trends/Foods/Settings shows plain background
+   there instead, clashing with the icons above it. */
+.status-bar-fill {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: var(--color-primary);
+  z-index: 100;
+  pointer-events: none;
+}
+
 .app-main {
   flex: 1;
   padding: 0 16px 24px;

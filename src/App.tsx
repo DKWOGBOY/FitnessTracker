@@ -47,6 +47,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <div className="status-bar-fill" aria-hidden="true" />
       <main className="app-main">
         {tab === "log" && (
           <LogTab
