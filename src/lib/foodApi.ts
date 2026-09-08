@@ -200,6 +200,52 @@ function nameMatchScore(name: string, query: string): number {
   return overlap * 15 - extraWords * 4;
 }
 
+/** A label like "100 GRM" or "45 g serving" is just restating a weight
+ * that's already covered by the mandatory 100-unit row - not a distinct,
+ * nameable serving worth borrowing. */
+const BARE_WEIGHT_LABEL = /^[\d.]+\s*(g|ml|kg|l|grm)s?\b.*$/i;
+
+/** Buckets near-duplicate gram amounts (e.g. 45g vs 48g "quarter cup" from
+ * different products) so they collapse into a single borrowed serving. */
+function servingBucket(grams: number): number {
+  return Math.round(grams / 10) * 10;
+}
+
+const MAX_BORROWED_SERVINGS = 3;
+
+/**
+ * The generic entry that usually wins the recommended slot (unbranded OFF
+ * product, or a plain USDA name) is often the one API record with the least
+ * serving detail - branded entries for the exact same food are what actually
+ * carry "1 cup" style measurements. So before ranking, pool the distinct
+ * named serving sizes seen across candidates that share the same normalized
+ * name onto all of them. That way picking the generic "Basmati Rice" over a
+ * specific "Basmati Rice (Tilda)" doesn't cost you its cup serving.
+ */
+function mergeSiblingServings(candidates: NormalizedFoodCandidate[]): NormalizedFoodCandidate[] {
+  const poolByName = new Map<string, { label: string; grams_equivalent: number }[]>();
+  for (const c of candidates) {
+    const key = normalizeName(c.name);
+    const pool = poolByName.get(key) ?? [];
+    for (const s of c.extraServings) {
+      if (BARE_WEIGHT_LABEL.test(s.label.trim())) continue;
+      if (pool.some((p) => servingBucket(p.grams_equivalent) === servingBucket(s.grams_equivalent))) continue;
+      pool.push(s);
+    }
+    poolByName.set(key, pool);
+  }
+  return candidates.map((c) => {
+    const pool = (poolByName.get(normalizeName(c.name)) ?? [])
+      .slice()
+      .sort((a, b) => a.grams_equivalent - b.grams_equivalent);
+    const existingBuckets = new Set(c.extraServings.map((s) => servingBucket(s.grams_equivalent)));
+    const borrowed = pool
+      .filter((p) => !existingBuckets.has(servingBucket(p.grams_equivalent)))
+      .slice(0, MAX_BORROWED_SERVINGS);
+    return borrowed.length === 0 ? c : { ...c, extraServings: [...c.extraServings, ...borrowed] };
+  });
+}
+
 /**
  * Sorts search results so the most "standard" match comes first: close name
  * match, generic (unbranded / Foundation-USDA) foods over specific branded
@@ -211,7 +257,8 @@ export function rankCandidates(
   candidates: NormalizedFoodCandidate[],
   query: string,
 ): NormalizedFoodCandidate[] {
-  const scored = candidates.map((c) => {
+  const enriched = mergeSiblingServings(candidates);
+  const scored = enriched.map((c) => {
     const nameScore = nameMatchScore(c.name, query);
     const genericBonus = c.isGeneric ? 30 : 0;
     const auBonus = c.isAustralian ? 20 : 0;
