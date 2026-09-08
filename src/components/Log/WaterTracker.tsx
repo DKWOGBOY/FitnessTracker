@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { useWaterLog } from "../../hooks/useWaterLog";
 import { IconWaterGlass } from "../icons";
 
 interface Props {
-  date: string;
   target: number;
+  litres: number;
+  setLitres: (value: number) => Promise<void>;
 }
 
 interface Bubble {
@@ -17,8 +17,7 @@ interface Bubble {
 const BUBBLE_COUNT = 8;
 const STEP = 0.1;
 
-export default function WaterTracker({ date, target }: Props) {
-  const { litres, setLitres } = useWaterLog(date);
+export default function WaterTracker({ target, litres, setLitres }: Props) {
   const [value, setValue] = useState(litres);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const barRef = useRef<HTMLDivElement>(null);

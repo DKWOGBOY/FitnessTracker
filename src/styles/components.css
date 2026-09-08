@@ -40,6 +40,72 @@
   height: 18px;
 }
 
+.settings-group {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.settings-group + .settings-group {
+  margin-top: 12px;
+}
+
+.settings-group-item + .settings-group-item {
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.settings-row-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-row-label {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.settings-row-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.settings-row-chevron-open {
+  transform: rotate(90deg);
+}
+
+.settings-row-panel {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -291,6 +357,7 @@ textarea:focus {
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 16px;
+  transition: opacity 0.25s ease;
 }
 
 .summary-hero-value {
@@ -946,6 +1013,27 @@ textarea:focus {
   100% {
     opacity: 0;
     transform: translate(-50%, 16px);
+  }
+}
+
+.page-transition-in {
+  animation: page-fade-in 0.16s ease-out both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-in {
+    animation: none;
   }
 }
 

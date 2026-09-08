@@ -1,15 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { FoodLogWithFood, Meal } from "../lib/types";
 
 const SELECT = "*, food:foods(*), serving:food_servings(*)";
 
-export function useFoodLogs(date: string) {
-  const [logs, setLogs] = useState<FoodLogWithFood[]>([]);
-  const [loading, setLoading] = useState(true);
+/** `seedLogs`, when provided, is already-fetched data for this exact date
+ * (e.g. from the Log page's single consolidated RPC) - the hook skips its
+ * own initial fetch for that first date and uses it directly. Any later
+ * date change still refetches normally. */
+export function useFoodLogs(date: string, seedLogs?: FoodLogWithFood[]) {
+  const [logs, setLogs] = useState<FoodLogWithFood[]>(seedLogs ?? []);
+  const [loading, setLoading] = useState(!seedLogs);
   const [error, setError] = useState<string | null>(null);
+  const skipNextFetch = useRef(!!seedLogs);
 
   const refresh = useCallback(async () => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error: err } = await supabase

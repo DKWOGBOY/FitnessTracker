@@ -25,7 +25,7 @@ export default function TrendsTab({ unitSystem }: { unitSystem: UnitSystem }) {
   const { targets } = useTargets();
 
   return (
-    <div className="tab-page">
+    <div className="tab-page page-transition-in">
       <div className="flex-between" style={{ marginBottom: 16 }}>
         <h2>Trends</h2>
         <div className="range-toggle">

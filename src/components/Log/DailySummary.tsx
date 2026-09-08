@@ -51,12 +51,13 @@ export default function DailySummary({ consumed, target, streak }: Props) {
 
   return (
     <div className="summary-hero">
-      {streak > 0 && (
-        <span className="summary-hero-streak">
-          <IconFlame className="icon" />
-          {streak} day{streak === 1 ? "" : "s"} streak
-        </span>
-      )}
+      {/* Always rendered (space reserved) so the streak fetch resolving a
+          moment after the rest of the page doesn't pop this in and shove
+          the ring down - it just fades in instead. */}
+      <span className="summary-hero-streak" style={{ opacity: streak > 0 ? 1 : 0 }}>
+        <IconFlame className="icon" />
+        {streak} day{streak === 1 ? "" : "s"} streak
+      </span>
 
       <div className="ring-wrap" style={{ width: 152, height: 152 }}>
         <ProgressRing pct={pct} color="#fff" trackColor={RING_TRACK} size={152} thickness={13} />

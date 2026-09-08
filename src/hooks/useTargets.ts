@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Target } from "../lib/types";
 
-export function useTargets() {
-  const [targets, setTargets] = useState<Target[]>([]);
-  const [loading, setLoading] = useState(true);
+/** `seed`, when provided, is already-fetched data (e.g. from the Log page's
+ * single consolidated RPC) - the hook skips its own initial fetch and uses
+ * it directly, only hitting the network again on an explicit refresh(). */
+export function useTargets(seed?: Target[]) {
+  const [targets, setTargets] = useState<Target[]>(seed ?? []);
+  const [loading, setLoading] = useState(!seed);
+  const skipNextFetch = useRef(!!seed);
 
   const refresh = useCallback(async () => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await supabase

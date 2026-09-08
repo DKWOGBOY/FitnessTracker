@@ -41,7 +41,7 @@ export default function FoodsTab() {
   }, [presets, query]);
 
   return (
-    <div className="tab-page">
+    <div className="tab-page page-transition-in">
       <div className="flex-between" style={{ marginBottom: 16 }}>
         <h2>Foods</h2>
         <button

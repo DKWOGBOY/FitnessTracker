@@ -6,9 +6,11 @@ import { supabase } from "../../lib/supabase";
 import { downloadCsv, toCsv } from "../../lib/csv";
 import { todayStr } from "../../lib/dates";
 import type { UnitSystem } from "../../lib/units";
+import { IconDownload, IconFlame, IconLink, IconRuler, IconTarget, IconUser, IconWaterGlass } from "../icons";
 import TdeeCalculator from "./TdeeCalculator";
 import ManualTargetForm from "./ManualTargetForm";
 import LiftLoginForm from "./LiftLoginForm";
+import CollapsibleRow from "./CollapsibleRow";
 
 interface Props {
   unitSystem: UnitSystem;
@@ -55,92 +57,96 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarge
   }
 
   return (
-    <div className="tab-page">
+    <div className="tab-page page-transition-in">
       <h2 style={{ marginBottom: 16 }}>Settings</h2>
 
-      <TdeeCalculator
-        unitSystem={unitSystem}
-        onApply={(result) =>
-          addTarget({
-            effective_date: todayStr(),
-            calories: result.targetCalories,
-            protein_g: result.proteinG,
-            carbs_g: result.carbsG,
-            fat_g: result.fatG,
-          })
-        }
-      />
-
-      <div style={{ marginTop: 12 }}>
-        <ManualTargetForm currentTarget={currentTarget} onSave={addTarget} />
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ marginBottom: 12 }}>Units</h3>
-        <div className="range-toggle">
-          <button
-            className={unitSystem === "metric" ? "active" : ""}
-            onClick={() => onUnitSystemChange("metric")}
-          >
-            Metric (kg/cm)
-          </button>
-          <button
-            className={unitSystem === "imperial" ? "active" : ""}
-            onClick={() => onUnitSystemChange("imperial")}
-          >
-            Imperial (lb/in)
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ marginBottom: 12 }}>Energy unit</h3>
-        <div className="range-toggle">
-          <button className={energyUnit === "kcal" ? "active" : ""} onClick={() => setEnergyUnit("kcal")}>
-            Calories (kcal)
-          </button>
-          <button className={energyUnit === "kj" ? "active" : ""} onClick={() => setEnergyUnit("kj")}>
-            Kilojoules (kJ)
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ marginBottom: 12 }}>Water target</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <input
-            type="number"
-            step="0.1"
-            min="0.5"
-            value={waterTarget}
-            onChange={(e) => {
-              const v = parseFloat(e.target.value);
-              if (!Number.isNaN(v) && v > 0) onWaterTargetChange(v);
-            }}
-            style={{ width: 90 }}
+      <div className="settings-group">
+        <CollapsibleRow icon={<IconFlame className="icon" />} label="TDEE / BMR calculator">
+          <TdeeCalculator
+            unitSystem={unitSystem}
+            onApply={(result) =>
+              addTarget({
+                effective_date: todayStr(),
+                calories: result.targetCalories,
+                protein_g: result.proteinG,
+                carbs_g: result.carbsG,
+                fat_g: result.fatG,
+              })
+            }
           />
-          <span className="text-muted" style={{ fontSize: 13 }}>litres per day</span>
-        </div>
+        </CollapsibleRow>
+        <CollapsibleRow icon={<IconTarget className="icon" />} label="Current targets">
+          <ManualTargetForm currentTarget={currentTarget} onSave={addTarget} />
+        </CollapsibleRow>
       </div>
 
-      <LiftLoginForm />
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ marginBottom: 12 }}>Data export</h3>
-        <button className="btn btn-secondary btn-block" onClick={handleExport} disabled={exporting}>
-          {exporting ? "Exporting..." : "Download CSV (food + weight logs)"}
-        </button>
+      <div className="settings-group" style={{ marginTop: 12 }}>
+        <CollapsibleRow icon={<IconRuler className="icon" />} label="Units">
+          <div className="range-toggle">
+            <button
+              className={unitSystem === "metric" ? "active" : ""}
+              onClick={() => onUnitSystemChange("metric")}
+            >
+              Metric (kg/cm)
+            </button>
+            <button
+              className={unitSystem === "imperial" ? "active" : ""}
+              onClick={() => onUnitSystemChange("imperial")}
+            >
+              Imperial (lb/in)
+            </button>
+          </div>
+        </CollapsibleRow>
+        <CollapsibleRow icon={<IconFlame className="icon" />} label="Energy unit">
+          <div className="range-toggle">
+            <button className={energyUnit === "kcal" ? "active" : ""} onClick={() => setEnergyUnit("kcal")}>
+              Calories (kcal)
+            </button>
+            <button className={energyUnit === "kj" ? "active" : ""} onClick={() => setEnergyUnit("kj")}>
+              Kilojoules (kJ)
+            </button>
+          </div>
+        </CollapsibleRow>
+        <CollapsibleRow icon={<IconWaterGlass className="icon" />} label="Water target">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              type="number"
+              step="0.1"
+              min="0.5"
+              value={waterTarget}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                if (!Number.isNaN(v) && v > 0) onWaterTargetChange(v);
+              }}
+              style={{ width: 90 }}
+            />
+            <span className="text-muted" style={{ fontSize: 13 }}>litres per day</span>
+          </div>
+        </CollapsibleRow>
       </div>
 
-      <div className="card" style={{ marginTop: 12 }}>
-        <div className="flex-between">
-          <span className="text-muted" style={{ fontSize: 13 }}>
-            {user?.email}
-          </span>
-          <button className="btn btn-danger" onClick={signOut}>
-            Sign out
+      <div className="settings-group" style={{ marginTop: 12 }}>
+        <CollapsibleRow icon={<IconLink className="icon" />} label="LIFT account">
+          <LiftLoginForm />
+        </CollapsibleRow>
+        <CollapsibleRow icon={<IconDownload className="icon" />} label="Data export">
+          <button className="btn btn-secondary btn-block" onClick={handleExport} disabled={exporting}>
+            {exporting ? "Exporting..." : "Download CSV (food + weight logs)"}
           </button>
-        </div>
+        </CollapsibleRow>
+      </div>
+
+      <div className="settings-group" style={{ marginTop: 12 }}>
+        <CollapsibleRow icon={<IconUser className="icon" />} label="Account">
+          <div className="flex-between">
+            <span className="text-muted" style={{ fontSize: 13 }}>
+              {user?.email}
+            </span>
+            <button className="btn btn-danger" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
+        </CollapsibleRow>
       </div>
     </div>
   );

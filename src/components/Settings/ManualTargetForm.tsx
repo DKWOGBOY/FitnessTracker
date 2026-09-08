@@ -31,8 +31,7 @@ export default function ManualTargetForm({ currentTarget, onSave }: Props) {
   }
 
   return (
-    <div className="card">
-      <h3 style={{ marginBottom: 4 }}>Current targets</h3>
+    <>
       <p className="text-muted" style={{ fontSize: 12, marginBottom: 12 }}>
         Saving creates a new target effective today — past days keep calculating against whatever
         was active at the time.
@@ -62,6 +61,6 @@ export default function ManualTargetForm({ currentTarget, onSave }: Props) {
           {saving ? "Saving..." : "Save targets"}
         </button>
       </form>
-    </div>
+    </>
   );
 }

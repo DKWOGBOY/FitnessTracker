@@ -127,6 +127,53 @@ export function IconChevronDown({ className }: IconProps) {
   );
 }
 
+export function IconTarget({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="7.5" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function IconRuler({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <rect x="3" y="8" width="18" height="8" rx="1.5" />
+      <path d="M7 8v3M11 8v3M15 8v3M19 8v3" />
+    </svg>
+  );
+}
+
+export function IconLink({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M9.5 14.5l5-5" />
+      <path d="M8 16.5a3.5 3.5 0 0 1 0-5l2-2" />
+      <path d="M16 7.5a3.5 3.5 0 0 1 0 5l-2 2" />
+    </svg>
+  );
+}
+
+export function IconDownload({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M12 4v11" />
+      <path d="M7.5 11l4.5 4.5L16.5 11" />
+      <path d="M5 19.5h14" />
+    </svg>
+  );
+}
+
+export function IconUser({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <circle cx="12" cy="8.5" r="3.5" />
+      <path d="M5 19c1-3.5 4-5 7-5s6 1.5 7 5" />
+    </svg>
+  );
+}
+
 export function IconArrowLeft({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">

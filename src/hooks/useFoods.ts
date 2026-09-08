@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { STANDARD_SERVINGS, type Food, type FoodInput, type FoodServing, type FoodServingInput } from "../lib/types";
 
@@ -18,13 +18,28 @@ function buildServingRows(baseUnit: "g" | "ml", extra: FoodServingInput[]) {
   ];
 }
 
-export function useFoods() {
-  const [foods, setFoods] = useState<Food[]>([]);
-  const [servings, setServings] = useState<FoodServing[]>([]);
-  const [loading, setLoading] = useState(true);
+export interface FoodsSeed {
+  foods: Food[];
+  servings: FoodServing[];
+}
+
+/** `seed`, when provided, is already-fetched data (e.g. from the Log page's
+ * single consolidated RPC) - the hook skips its own initial fetch and uses
+ * it directly, only hitting the network again on an explicit refresh() or
+ * mutation. Only the seed present at the very first render is honored. */
+export function useFoods(seed?: FoodsSeed) {
+  const [foods, setFoods] = useState<Food[]>(seed?.foods ?? []);
+  const [servings, setServings] = useState<FoodServing[]>(seed?.servings ?? []);
+  const [loading, setLoading] = useState(!seed);
   const [error, setError] = useState<string | null>(null);
+  const skipNextFetch = useRef(!!seed);
 
   const refresh = useCallback(async () => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [foodsRes, servingsRes] = await Promise.all([

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { macrosForLog, type Food, type FoodServing, type Meal, type MealPresetWithItems } from "../lib/types";
 
@@ -56,11 +56,54 @@ async function ensureAggregateServing(foodId: string) {
     .insert({ food_id: foodId, label: "1 meal", grams_equivalent: 100, is_default: true });
 }
 
-export function useMealPresets() {
-  const [presets, setPresets] = useState<MealPresetWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+/** Any preset saved before aggregate foods existed won't have food_id yet -
+ * compute and attach one now so it behaves like the rest. Mutates and
+ * returns the same array. (user_id defaults to auth.uid() server-side on
+ * the insert below.) */
+async function backfillMissingAggregates(rows: MealPresetWithItems[]) {
+  for (const preset of rows) {
+    if (preset.food_id || preset.items.length === 0) continue;
+    const totals = await computeAggregateMacros(
+      preset.items.map((i) => ({ foodId: i.food_id, servingId: i.serving_id, quantity: i.quantity })),
+    );
+    const { data: aggFood } = await supabase
+      .from("foods")
+      .insert({
+        name: preset.name,
+        ...totals,
+        base_unit: "g",
+        source: "meal",
+        source_id: null,
+        is_frequent: false,
+      })
+      .select()
+      .single();
+    if (aggFood) {
+      await ensureAggregateServing(aggFood.id);
+      await supabase.from("meal_presets").update({ food_id: aggFood.id }).eq("id", preset.id);
+      preset.food_id = aggFood.id;
+      preset.food = aggFood as Food;
+    }
+  }
+  return rows;
+}
+
+/** `seed`, when provided, is already-fetched data (e.g. from the Log page's
+ * single consolidated RPC) - the hook skips its own initial fetch and uses
+ * it directly (still running the legacy-aggregate backfill check against
+ * it), only hitting the network again on an explicit refresh() or mutation. */
+export function useMealPresets(seed?: MealPresetWithItems[]) {
+  const [presets, setPresets] = useState<MealPresetWithItems[]>(seed ?? []);
+  const [loading, setLoading] = useState(!seed);
+  const skipNextFetch = useRef(!!seed);
 
   const refresh = useCallback(async () => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      setLoading(false);
+      backfillMissingAggregates([...(seed ?? [])]).then((rows) => setPresets(rows));
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await supabase
@@ -70,35 +113,7 @@ export function useMealPresets() {
         )
         .order("created_at", { ascending: false });
       const rows = (data ?? []) as unknown as MealPresetWithItems[];
-
-      // Backfill: any preset saved before aggregate foods existed won't have
-      // food_id yet. Compute and attach one now so it behaves like the rest.
-      // (user_id defaults to auth.uid() server-side on the insert below.)
-      for (const preset of rows) {
-        if (preset.food_id || preset.items.length === 0) continue;
-        const totals = await computeAggregateMacros(
-          preset.items.map((i) => ({ foodId: i.food_id, servingId: i.serving_id, quantity: i.quantity })),
-        );
-        const { data: aggFood } = await supabase
-          .from("foods")
-          .insert({
-            name: preset.name,
-            ...totals,
-            base_unit: "g",
-            source: "meal",
-            source_id: null,
-            is_frequent: false,
-          })
-          .select()
-          .single();
-        if (aggFood) {
-          await ensureAggregateServing(aggFood.id);
-          await supabase.from("meal_presets").update({ food_id: aggFood.id }).eq("id", preset.id);
-          preset.food_id = aggFood.id;
-          preset.food = aggFood as Food;
-        }
-      }
-
+      await backfillMissingAggregates(rows);
       setPresets(rows);
     } finally {
       setLoading(false);

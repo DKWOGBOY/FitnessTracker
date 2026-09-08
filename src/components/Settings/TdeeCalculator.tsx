@@ -49,9 +49,7 @@ export default function TdeeCalculator({ unitSystem, onApply }: Props) {
   }
 
   return (
-    <div className="card">
-      <h3 style={{ marginBottom: 12 }}>TDEE / BMR calculator</h3>
-
+    <>
       <form onSubmit={handleCalculate}>
         <div className="field-row">
           <div className="field">
@@ -119,6 +117,6 @@ export default function TdeeCalculator({ unitSystem, onApply }: Props) {
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }

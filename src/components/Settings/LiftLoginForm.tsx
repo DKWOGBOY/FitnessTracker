@@ -10,12 +10,9 @@ export default function LiftLoginForm() {
 
   if (!enabled) {
     return (
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ marginBottom: 8 }}>LIFT account</h3>
-        <p className="text-muted" style={{ fontSize: 13 }}>
-          LIFT integration isn't configured (missing VITE_LIFT_SUPABASE_URL / VITE_LIFT_SUPABASE_ANON_KEY).
-        </p>
-      </div>
+      <p className="text-muted" style={{ fontSize: 13 }}>
+        LIFT integration isn't configured (missing VITE_LIFT_SUPABASE_URL / VITE_LIFT_SUPABASE_ANON_KEY).
+      </p>
     );
   }
 
@@ -34,9 +31,7 @@ export default function LiftLoginForm() {
   }
 
   return (
-    <div className="card" style={{ marginTop: 12 }}>
-      <h3 style={{ marginBottom: 12 }}>LIFT account</h3>
-
+    <>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 8 }}>
           <div className="spinner" />
@@ -87,6 +82,6 @@ export default function LiftLoginForm() {
           </button>
         </form>
       )}
-    </div>
+    </>
   );
 }
