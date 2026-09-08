@@ -7,6 +7,7 @@ import LogTab from "./components/Log/LogTab";
 import TrendsTab from "./components/Trends/TrendsTab";
 import FoodsTab from "./components/Foods/FoodsTab";
 import SettingsTab from "./components/Settings/SettingsTab";
+import QuickAddModal from "./components/QuickAddModal";
 import { IconLog, IconTrends, IconFoods, IconSettings, IconPlus } from "./components/icons";
 import { getStoredUnitSystem, setStoredUnitSystem, type UnitSystem } from "./lib/units";
 import { getStoredWaterTarget, setStoredWaterTarget } from "./lib/waterTarget";
@@ -40,8 +41,8 @@ function AppShell() {
   }
 
   function handleQuickAdd() {
-    setLogDate(todayStr());
-    setTab("log");
+    // Just open the food search overlay - stay on whatever tab the user is
+    // currently viewing instead of yanking them to Log.
     setModalMeal("breakfast");
   }
 
@@ -93,6 +94,10 @@ function AppShell() {
           <IconPlus className="icon" />
         </button>
       </div>
+
+      {tab !== "log" && modalMeal && (
+        <QuickAddModal initialMeal={modalMeal} onClose={() => setModalMeal(null)} />
+      )}
     </div>
   );
 }

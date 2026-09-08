@@ -1168,19 +1168,6 @@ textarea:focus {
   margin-top: 12px;
 }
 
-.weight-log-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-water-soft);
-  color: var(--color-water);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  margin-top: 12px;
-  font-weight: 600;
-  font-size: 13px;
-}
-
 .macro-legend-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

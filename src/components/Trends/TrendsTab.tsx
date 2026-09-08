@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNoPageScroll } from "../../hooks/useNoPageScroll";
 import type { UnitSystem } from "../../lib/units";
 import CalorieOverviewCard from "./CalorieOverviewCard";
 import MacroOverviewCard from "./MacroOverviewCard";
@@ -11,6 +12,7 @@ type Detail = "calories" | "macros" | "weight" | null;
 
 export default function TrendsTab({ unitSystem }: { unitSystem: UnitSystem }) {
   const [detail, setDetail] = useState<Detail>(null);
+  useNoPageScroll();
 
   return (
     <div className="tab-page page-transition-in">

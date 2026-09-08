@@ -21,11 +21,24 @@ html::-webkit-scrollbar {
 }
 
 body {
-  background: var(--color-bg);
+  /* Belt-and-suspenders with .status-bar-fill (App.tsx): paint the safe-area
+     strip behind the home-screen status bar orange directly on body too, in
+     case that fixed overlay div doesn't take effect on a given device. */
+  background: linear-gradient(
+    to bottom,
+    var(--color-primary) 0px,
+    var(--color-primary) env(safe-area-inset-top),
+    var(--color-bg) env(safe-area-inset-top)
+  );
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+body.no-page-scroll {
+  overflow: hidden;
 }
 
 #root {
