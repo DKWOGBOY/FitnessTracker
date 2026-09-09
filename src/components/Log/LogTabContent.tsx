@@ -61,7 +61,7 @@ export default function LogTabContent({
 
   return (
     <div className="page-transition-in">
-      <DailySummary consumed={consumed} target={target} streak={streak} burned={burned} date={date} />
+      <DailySummary consumed={consumed} target={target} streak={streak} burned={burned} />
 
       <WeighInReminder onGoToTrends={onGoToTrends} remindAfterDays={weighInReminderDays} />
 

@@ -2,17 +2,15 @@ import type { Macros, Target } from "../../lib/types";
 import { IconFlame } from "../icons";
 import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { energyUnitLabel, formatEnergy } from "../../lib/energy";
-import { formatDateLabel } from "../../lib/dates";
 
 interface Props {
   consumed: Macros;
   target: Target | null;
   streak: number;
   burned: number;
-  date: string;
 }
 
-export default function DailySummary({ consumed, target, streak, burned, date }: Props) {
+export default function DailySummary({ consumed, target, streak, burned }: Props) {
   const { energyUnit } = useEnergyUnit();
   const unitLabel = energyUnitLabel(energyUnit);
   const calorieTarget = target?.calories ?? null;
@@ -28,7 +26,6 @@ export default function DailySummary({ consumed, target, streak, burned, date }:
     <>
       <div className="summary-hero">
         <div className="summary-hero-top">
-          <span className="summary-hero-date">{formatDateLabel(date)}</span>
           <span className="summary-hero-streak" style={{ opacity: streak > 0 ? 1 : 0 }}>
             <IconFlame className="icon" />
             {streak} day{streak === 1 ? "" : "s"} streak

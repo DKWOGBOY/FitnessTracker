@@ -365,15 +365,7 @@ textarea:focus {
 .summary-hero-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.summary-hero-date {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: #fff8f2;
+  justify-content: flex-end;
 }
 
 .summary-hero-streak {
