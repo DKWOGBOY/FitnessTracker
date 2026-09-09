@@ -11,8 +11,11 @@ import {
   type Meal,
 } from "../../lib/types";
 import type { PresetItemInput } from "../../hooks/useMealPresets";
-import { IconArrowLeft, IconCamera, IconClose, IconPlus } from "../icons";
+import { IconArrowLeft, IconCamera, IconCheck, IconClose, IconPlus } from "../icons";
 import Energy from "../Energy";
+
+const ANALYZE_STEPS = ["Reading photo...", "Identifying ingredients...", "Estimating portions...", "Almost done..."];
+const ANALYZE_STEP_INTERVAL_MS = 1100;
 
 interface Props {
   meal: Meal;
@@ -66,12 +69,27 @@ export default function MealPhotoScanModal({
   const [saving, setSaving] = useState(false);
   const [savingAsMeal, setSavingAsMeal] = useState(false);
   const [mealName, setMealName] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [analyzeStepIndex, setAnalyzeStepIndex] = useState(0);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Revokes the previous preview URL whenever a new one is set, and on
+  // unmount - browsers won't free the underlying blob otherwise.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   async function handleFileSelected(file: File) {
     setError(null);
+    setPreviewUrl(URL.createObjectURL(file));
+    setAnalyzeStepIndex(0);
     setStep("analyzing");
+    const stepTimer = setInterval(() => {
+      setAnalyzeStepIndex((i) => Math.min(i + 1, ANALYZE_STEPS.length - 1));
+    }, ANALYZE_STEP_INTERVAL_MS);
     try {
       const detected = await analyzeMealPhoto(file);
       if (detected.length === 0) {
@@ -84,6 +102,8 @@ export default function MealPhotoScanModal({
     } catch (err) {
       setError(err instanceof MealPhotoError ? err.message : "Photo analysis failed.");
       setStep("capture");
+    } finally {
+      clearInterval(stepTimer);
     }
   }
 
@@ -205,9 +225,27 @@ export default function MealPhotoScanModal({
         )}
 
         {step === "analyzing" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: 48, gap: 16 }}>
-            <div className="spinner" />
-            <p className="text-muted">Analyzing photo...</p>
+          <div style={{ padding: "8px 0" }}>
+            {previewUrl && (
+              <div className="meal-scan-photo-wrap">
+                <img src={previewUrl} alt="" className="meal-scan-photo" />
+                <div className="meal-scan-line" />
+              </div>
+            )}
+            <div className="meal-scan-steps">
+              {ANALYZE_STEPS.map((label, i) => {
+                const done = i < analyzeStepIndex;
+                const active = i === analyzeStepIndex;
+                return (
+                  <div className={`meal-scan-step${done || active ? " meal-scan-step-live" : ""}`} key={label}>
+                    <span className="meal-scan-step-icon">
+                      {done ? <IconCheck className="icon" /> : active ? <div className="spinner" /> : null}
+                    </span>
+                    {label}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
