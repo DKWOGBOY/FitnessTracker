@@ -642,6 +642,7 @@ export default function FoodSearchModal({
           onAdd={onAdd}
           onCreateFood={onCreateFood}
           onFoodCreated={onFoodCreated}
+          onSaveMeal={onSaveMeal}
         />
       )}
     </div>

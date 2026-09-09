@@ -10,6 +10,7 @@ import {
   type FoodServing,
   type Meal,
 } from "../../lib/types";
+import type { PresetItemInput } from "../../hooks/useMealPresets";
 import { IconArrowLeft, IconCamera, IconClose, IconPlus } from "../icons";
 import Energy from "../Energy";
 
@@ -20,6 +21,7 @@ interface Props {
   onAdd: (foodId: string, meal: Meal, quantity: number, servingId: string | null) => Promise<void>;
   onCreateFood: (input: FoodInput) => Promise<Food>;
   onFoodCreated: (food: Food) => void;
+  onSaveMeal?: (name: string, defaultMeal: Meal, items: PresetItemInput[], servingsCount: number) => Promise<void>;
 }
 
 interface ReviewItem {
@@ -31,8 +33,14 @@ interface ReviewItem {
   quantity: number;
 }
 
+/** "steamed rice" -> "Steamed Rice" - the AI reliably returns lowercase
+ * names, which read as a rough draft rather than a real food name. */
+function toTitleCase(name: string): string {
+  return name.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+}
+
 function fromDetected(d: DetectedIngredient): ReviewItem {
-  return { aiName: d.name, aiQuantity: d.quantity, aiUnit: d.unit, food: null, serving: null, quantity: 1 };
+  return { aiName: toTitleCase(d.name), aiQuantity: d.quantity, aiUnit: d.unit, food: null, serving: null, quantity: 1 };
 }
 
 /**
@@ -42,13 +50,24 @@ function fromDetected(d: DetectedIngredient): ReviewItem {
  * own real servings) and can have its quantity adjusted, removed, or a
  * missed item added, before "Add to log" commits anything.
  */
-export default function MealPhotoScanModal({ meal, foods, onClose, onAdd, onCreateFood, onFoodCreated }: Props) {
+export default function MealPhotoScanModal({
+  meal,
+  foods,
+  onClose,
+  onAdd,
+  onCreateFood,
+  onFoodCreated,
+  onSaveMeal,
+}: Props) {
   const [step, setStep] = useState<"capture" | "analyzing" | "review">("capture");
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [matchingIndex, setMatchingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [savingAsMeal, setSavingAsMeal] = useState(false);
+  const [mealName, setMealName] = useState("");
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFileSelected(file: File) {
     setError(null);
@@ -103,6 +122,20 @@ export default function MealPhotoScanModal({ meal, foods, onClose, onAdd, onCrea
     }
   }
 
+  async function handleSaveMeal() {
+    if (!onSaveMeal || !mealName.trim()) return;
+    setSaving(true);
+    try {
+      const presetItems: PresetItemInput[] = items
+        .filter((it): it is ReviewItem & { food: Food } => !!it.food)
+        .map((it) => ({ foodId: it.food.id, servingId: it.serving?.id ?? null, quantity: it.quantity }));
+      await onSaveMeal(mealName.trim(), meal, presetItems, 1);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (matchingIndex !== null) {
     return (
       <MatchPicker
@@ -129,22 +162,38 @@ export default function MealPhotoScanModal({ meal, foods, onClose, onAdd, onCrea
         {step === "capture" && (
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
             <p className="text-muted" style={{ marginBottom: 20 }}>
-              Take a photo of your meal - the AI will guess the ingredients, then you can edit servings, remove
-              anything wrong, and add anything it missed before logging.
+              Take or upload a photo of your meal - the AI will guess the ingredients, then you can edit servings,
+              remove anything wrong, and add anything it missed before logging.
             </p>
-            <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()}>
-              <IconCamera className="icon" /> Take photo
-            </button>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button className="btn btn-primary" onClick={() => cameraInputRef.current?.click()}>
+                <IconCamera className="icon" /> Take photo
+              </button>
+              <button className="btn btn-secondary" onClick={() => galleryInputRef.current?.click()}>
+                Choose from library
+              </button>
+            </div>
             {error && (
               <p className="error-text" style={{ marginTop: 16 }}>
                 {error}
               </p>
             )}
             <input
-              ref={fileInputRef}
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
               capture="environment"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelected(file);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
               style={{ display: "none" }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -228,13 +277,52 @@ export default function MealPhotoScanModal({ meal, foods, onClose, onAdd, onCrea
               <IconPlus className="icon" /> Add ingredient
             </button>
 
-            <button
-              className="btn btn-primary btn-block"
-              onClick={handleConfirm}
-              disabled={saving || matchedCount === 0}
-            >
-              {saving ? "Adding..." : `Add ${matchedCount} item${matchedCount === 1 ? "" : "s"} to log`}
-            </button>
+            {savingAsMeal ? (
+              <>
+                <div className="field" style={{ marginBottom: 12 }}>
+                  <label>Meal name</label>
+                  <input
+                    type="text"
+                    value={mealName}
+                    onChange={(e) => setMealName(e.target.value)}
+                    placeholder="e.g. Chicken & rice bowl"
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-secondary" onClick={() => setSavingAsMeal(false)} disabled={saving}>
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-primary btn-block"
+                    onClick={handleSaveMeal}
+                    disabled={saving || !mealName.trim()}
+                  >
+                    {saving ? "Saving..." : "Save meal"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn btn-primary btn-block"
+                  onClick={handleConfirm}
+                  disabled={saving || matchedCount === 0}
+                >
+                  {saving ? "Adding..." : `Add ${matchedCount} item${matchedCount === 1 ? "" : "s"} to log`}
+                </button>
+                {onSaveMeal && (
+                  <button
+                    className="btn btn-ghost btn-block"
+                    style={{ marginTop: 8 }}
+                    onClick={() => setSavingAsMeal(true)}
+                    disabled={matchedCount === 0}
+                  >
+                    Save as a meal instead
+                  </button>
+                )}
+              </>
+            )}
           </>
         )}
       </div>
