@@ -4,8 +4,9 @@ import { useMealPresets } from "../../hooks/useMealPresets";
 import type { Food, MealPresetWithItems } from "../../lib/types";
 import FoodForm from "./FoodForm";
 import MealBuilder from "./MealBuilder";
-import { IconClose, IconPlus, IconStar } from "../icons";
+import { IconCheck, IconClose, IconPlus, IconStar } from "../icons";
 import Energy from "../Energy";
+import SwipeableRow from "../Log/SwipeableRow";
 
 type View = "foods" | "meals";
 
@@ -79,44 +80,46 @@ export default function FoodsTab() {
         ) : (
           <div className="card">
             {filteredFoods.map((f) => (
-              <div className="list-row" key={f.id}>
-                <div className="list-row-main">
-                  <div className="list-row-title">{f.name}</div>
-                  <div className="list-row-sub">
-                    <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
-                    {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g
-                    {(f.fiber_g != null || f.sugar_g != null || f.sodium_mg != null) && (
-                      <>
-                        {" "}
-                        · {f.fiber_g != null && `Fiber ${Math.round(f.fiber_g)}g `}
-                        {f.sugar_g != null && `Sugar ${Math.round(f.sugar_g)}g `}
-                        {f.sodium_mg != null && `Sodium ${Math.round(f.sodium_mg)}mg`}
-                      </>
-                    )}{" "}
-                    · <span className="badge-muted badge">{f.source}</span>
-                    {f.is_verified && (
-                      <span className="badge" style={{ marginLeft: 4 }}>
-                        Verified
-                      </span>
-                    )}
+              <SwipeableRow key={f.id} onTap={() => setEditingFood(f)} onDelete={() => deleteFood(f.id)}>
+                <div className="list-row">
+                  <div className="list-row-main">
+                    <div className="list-row-title">{f.name}</div>
+                    <div className="list-row-sub">
+                      <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
+                      {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g
+                      {(f.fiber_g != null || f.sugar_g != null || f.sodium_mg != null) && (
+                        <>
+                          {" "}
+                          · {f.fiber_g != null && `Fiber ${Math.round(f.fiber_g)}g `}
+                          {f.sugar_g != null && `Sugar ${Math.round(f.sugar_g)}g `}
+                          {f.sodium_mg != null && `Sodium ${Math.round(f.sodium_mg)}mg`}
+                        </>
+                      )}
+                      {f.is_verified && (
+                        <span
+                          className="verified-badge"
+                          title="Verified: curated macros + real household portions"
+                        >
+                          <IconCheck className="icon" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="list-row-actions">
+                    <button
+                      className="btn btn-ghost"
+                      title={f.is_frequent ? "Remove from frequent" : "Mark as frequent"}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFrequent(f.id, !f.is_frequent);
+                      }}
+                    >
+                      <IconStar className={f.is_frequent ? "icon icon-star" : "icon"} filled={f.is_frequent} />
+                    </button>
                   </div>
                 </div>
-                <div className="list-row-actions">
-                  <button
-                    className="btn btn-ghost"
-                    title={f.is_frequent ? "Remove from frequent" : "Mark as frequent"}
-                    onClick={() => toggleFrequent(f.id, !f.is_frequent)}
-                  >
-                    <IconStar className={f.is_frequent ? "icon icon-star" : "icon"} filled={f.is_frequent} />
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setEditingFood(f)}>
-                    Edit
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => deleteFood(f.id)}>
-                    <IconClose className="icon" />
-                  </button>
-                </div>
-              </div>
+              </SwipeableRow>
             ))}
           </div>
         )
