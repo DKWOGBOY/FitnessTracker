@@ -1,17 +1,17 @@
 // Scheduled job (see `config.schedule` below): finds every user who is
-// overdue for a weigh-in (mirrors the REMIND_AFTER_DAYS logic in
-// WeighInReminder.tsx) and hasn't already been nudged in the last
-// REMIND_AFTER_DAYS days, and sends them a push notification.
+// overdue for a weigh-in (per-user threshold from user_settings, mirroring
+// WeighInReminder.tsx's in-app banner) and hasn't already been nudged in
+// that same number of days, and sends them a push notification.
 //
 // Runs with the Supabase service-role key, not a user session - there is no
 // signed-in user in a scheduled job, so this deliberately bypasses RLS to
-// read across every user's weigh-in and subscription rows (the same trust
-// boundary as any other server-side admin job).
+// read across every user's weigh-in, settings, and subscription rows (the
+// same trust boundary as any other server-side admin job).
 
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
-const REMIND_AFTER_DAYS = 7;
+const DEFAULT_REMIND_AFTER_DAYS = 7;
 
 function daysBetween(a: string, b: string): number {
   const msPerDay = 24 * 60 * 60 * 1000;
@@ -33,34 +33,39 @@ export default async () => {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: subscriptions, error: subsErr }, { data: lastWeighIns, error: weighErr }] = await Promise.all([
-    supabase.from("push_subscriptions").select("*"),
-    supabase
-      .from("weight_logs")
-      .select("user_id, log_date")
-      .order("log_date", { ascending: false }),
-  ]);
+  const [{ data: subscriptions, error: subsErr }, { data: lastWeighIns, error: weighErr }, { data: settingsRows, error: settingsErr }] =
+    await Promise.all([
+      supabase.from("push_subscriptions").select("*"),
+      supabase
+        .from("weight_logs")
+        .select("user_id, log_date")
+        .order("log_date", { ascending: false }),
+      supabase.from("user_settings").select("user_id, weigh_in_reminder_days"),
+    ]);
 
-  if (subsErr || weighErr) {
-    return new Response(JSON.stringify({ error: (subsErr ?? weighErr)?.message }), { status: 500 });
+  if (subsErr || weighErr || settingsErr) {
+    return new Response(JSON.stringify({ error: (subsErr ?? weighErr ?? settingsErr)?.message }), { status: 500 });
   }
 
   const lastWeighInByUser = new Map<string, string>();
   for (const row of lastWeighIns ?? []) {
     if (!lastWeighInByUser.has(row.user_id)) lastWeighInByUser.set(row.user_id, row.log_date);
   }
+  const reminderDaysByUser = new Map<string, number>();
+  for (const row of settingsRows ?? []) reminderDaysByUser.set(row.user_id, row.weigh_in_reminder_days);
 
   let sent = 0;
   let pruned = 0;
 
   for (const sub of subscriptions ?? []) {
+    const remindAfterDays = reminderDaysByUser.get(sub.user_id) ?? DEFAULT_REMIND_AFTER_DAYS;
     const lastDate = lastWeighInByUser.get(sub.user_id) ?? null;
     const daysSince = lastDate ? daysBetween(lastDate, today) : Infinity;
-    const overdue = daysSince >= REMIND_AFTER_DAYS;
+    const overdue = daysSince >= remindAfterDays;
     if (!overdue) continue;
 
     const daysSinceLastNudge = sub.last_reminder_sent_date ? daysBetween(sub.last_reminder_sent_date, today) : Infinity;
-    if (daysSinceLastNudge < REMIND_AFTER_DAYS) continue;
+    if (daysSinceLastNudge < remindAfterDays) continue;
 
     try {
       await webpush.sendNotification(

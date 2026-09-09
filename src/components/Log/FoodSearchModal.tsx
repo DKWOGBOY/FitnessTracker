@@ -37,6 +37,7 @@ import {
   IconStar,
 } from "../icons";
 import Energy from "../Energy";
+import ExtendedNutrientsBar from "../ExtendedNutrientsBar";
 import MealBuilder from "../Foods/MealBuilder";
 
 interface Props {
@@ -586,6 +587,8 @@ export default function FoodSearchModal({
                 </span>
               </div>
             </div>
+
+            <ExtendedNutrientsBar food={detailFood} macros={detailMacros} />
 
             <button className="btn btn-primary btn-block" onClick={handleConfirm} disabled={saving || !quantity}>
               {saving ? "Adding..." : isPicker ? "Add to meal" : "Add to log"}

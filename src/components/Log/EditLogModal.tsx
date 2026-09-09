@@ -11,6 +11,7 @@ import {
 } from "../../lib/types";
 import { IconClose } from "../icons";
 import Energy from "../Energy";
+import ExtendedNutrientsBar from "../ExtendedNutrientsBar";
 import MealBuilder from "../Foods/MealBuilder";
 import type { PresetItemInput } from "../../hooks/useMealPresets";
 
@@ -135,17 +136,9 @@ export default function EditLogModal({
               P {Math.round(macros.protein_g)}g · C {Math.round(macros.carbs_g)}g · F {Math.round(macros.fat_g)}g
             </span>
           </div>
-          {(log.food.fiber_g != null || log.food.sugar_g != null || log.food.sodium_mg != null) && (
-            <div className="flex-between" style={{ marginTop: 4 }}>
-              <span />
-              <span className="text-muted" style={{ fontSize: 12 }}>
-                {log.food.fiber_g != null && `Fiber ${Math.round(macros.fiber_g)}g · `}
-                {log.food.sugar_g != null && `Sugar ${Math.round(macros.sugar_g)}g · `}
-                {log.food.sodium_mg != null && `Sodium ${Math.round(macros.sodium_mg)}mg`}
-              </span>
-            </div>
-          )}
         </div>
+
+        <ExtendedNutrientsBar food={log.food} macros={macros} />
 
         {matchingPreset && (
           <button

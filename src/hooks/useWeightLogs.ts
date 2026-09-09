@@ -86,6 +86,59 @@ export function useWeightSummary() {
   return { first, last, loading, refresh };
 }
 
+const DEFAULT_WEIGHT_KG = 70;
+
+/** The weight to use for a given day's calorie-burn estimate: the closest
+ * logged weight on or before that date (most accurate for a past date),
+ * falling back to the closest one after it (e.g. the user's very first
+ * weigh-in happened after this date), falling back to a generic default if
+ * nothing has ever been logged. */
+export function useNearestWeight(date: string) {
+  const [weightKg, setWeightKg] = useState(DEFAULT_WEIGHT_KG);
+  const [isDefault, setIsDefault] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: onOrBefore } = await supabase
+        .from("weight_logs")
+        .select("weight_kg")
+        .lte("log_date", date)
+        .order("log_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (onOrBefore) {
+        setWeightKg(onOrBefore.weight_kg);
+        setIsDefault(false);
+        return;
+      }
+      const { data: after } = await supabase
+        .from("weight_logs")
+        .select("weight_kg")
+        .gt("log_date", date)
+        .order("log_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (after) {
+        setWeightKg(after.weight_kg);
+        setIsDefault(false);
+      } else {
+        setWeightKg(DEFAULT_WEIGHT_KG);
+        setIsDefault(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [date]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { weightKg, isDefault, loading };
+}
+
 /** Weight logs across a date range, for Trends. */
 export function useWeightLogsRange(fromDate: string | null) {
   const [logs, setLogs] = useState<WeightLog[]>([]);

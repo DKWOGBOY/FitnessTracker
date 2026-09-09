@@ -5,6 +5,7 @@ import { useMealPresets } from "../../hooks/useMealPresets";
 import { useStreak } from "../../hooks/useStreak";
 import { useWaterLog } from "../../hooks/useWaterLog";
 import { useExerciseLogs } from "../../hooks/useExerciseLogs";
+import { useUserSettings } from "../../hooks/useUserSettings";
 import type { LogPageInitialData } from "../../hooks/useLogPageInitialData";
 import { MEALS, macrosForLog, sumMacros, type Meal } from "../../lib/types";
 import DateNav from "./DateNav";
@@ -50,10 +51,13 @@ export default function LogTabContent({
       : undefined,
   );
   const { litres, setLitres } = useWaterLog(date, initialData?.waterLitres);
-  const { logs: exerciseLogs, addLog: addExerciseLog, deleteLog: deleteExerciseLog } = useExerciseLogs(
-    date,
-    initialData?.exerciseLogs,
-  );
+  const { weighInReminderDays } = useUserSettings();
+  const {
+    logs: exerciseLogs,
+    addLog: addExerciseLog,
+    deleteLog: deleteExerciseLog,
+    upsertLiftEstimate,
+  } = useExerciseLogs(date, initialData?.exerciseLogs);
 
   const consumed = sumMacros(logs.map((l) => macrosForLog(l)));
   const target = targetForDate(date);
@@ -63,7 +67,7 @@ export default function LogTabContent({
     <div className="page-transition-in">
       <DailySummary consumed={consumed} target={target} streak={streak} burned={burned} />
 
-      <WeighInReminder onGoToTrends={onGoToTrends} />
+      <WeighInReminder onGoToTrends={onGoToTrends} remindAfterDays={weighInReminderDays} />
 
       <DateNav date={date} onChange={onDateChange} />
 
@@ -88,7 +92,13 @@ export default function LogTabContent({
       ))}
 
       <div className="section-title">Exercise</div>
-      <ExerciseCard date={date} logs={exerciseLogs} onAdd={addExerciseLog} onDelete={deleteExerciseLog} />
+      <ExerciseCard
+        date={date}
+        logs={exerciseLogs}
+        onAdd={addExerciseLog}
+        onDelete={deleteExerciseLog}
+        onUpsertLiftEstimate={upsertLiftEstimate}
+      />
 
       {modalMeal && (
         <FoodSearchModal

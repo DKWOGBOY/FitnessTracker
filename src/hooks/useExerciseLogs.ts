@@ -55,5 +55,25 @@ export function useExerciseLogs(date: string, seedLogs?: ExerciseLog[]) {
     setLogs((prev) => prev.filter((l) => l.id !== id));
   }
 
-  return { logs, loading, error, refresh, addLog, deleteLog };
+  /** Upserts an auto-derived LIFT estimate by lift_session_id (see the
+   * unique index in 0012) - re-running this with an updated calorie figure
+   * replaces the existing row instead of creating a duplicate. */
+  async function upsertLiftEstimate(liftSessionId: string, name: string, caloriesBurned: number) {
+    const { data, error: err } = await supabase
+      .from("exercise_logs")
+      .upsert(
+        { lift_session_id: liftSessionId, name, calories_burned: caloriesBurned, source: "lift_estimate", log_date: date },
+        { onConflict: "user_id,lift_session_id" },
+      )
+      .select()
+      .single();
+    if (err) throw err;
+    const row = data as ExerciseLog;
+    setLogs((prev) => {
+      const existing = prev.find((l) => l.id === row.id);
+      return existing ? prev.map((l) => (l.id === row.id ? row : l)) : [...prev, row];
+    });
+  }
+
+  return { logs, loading, error, refresh, addLog, deleteLog, upsertLiftEstimate };
 }

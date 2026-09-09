@@ -77,14 +77,19 @@ export interface FoodLogWithFood extends FoodLog {
   serving: FoodServing | null;
 }
 
-/** A manual "I did X, burned Y kcal" entry - independent of the read-only
- * LIFT integration, which has no calorie estimate of its own. */
+/** A "burned Y kcal" entry - either typed in manually, or a MET-based
+ * estimate this app derived automatically from a connected LIFT workout
+ * (LIFT itself has no calorie tracking). `lift_session_id` identifies the
+ * source LIFT session for the latter, so it can be upserted instead of
+ * duplicated when recomputed. */
 export interface ExerciseLog {
   id: string;
   user_id: string;
   log_date: string;
   name: string;
   calories_burned: number;
+  source: "manual" | "lift_estimate";
+  lift_session_id: string | null;
   created_at: string;
 }
 

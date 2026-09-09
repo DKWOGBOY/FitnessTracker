@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { useTargets } from "../../hooks/useTargets";
 import { usePushSubscription } from "../../hooks/usePushSubscription";
+import { useUserSettings } from "../../hooks/useUserSettings";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, toCsv } from "../../lib/csv";
 import { todayStr } from "../../lib/dates";
@@ -25,6 +26,7 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarge
   const { energyUnit, setEnergyUnit } = useEnergyUnit();
   const { currentTarget, addTarget } = useTargets();
   const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, error: pushError, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushSubscription();
+  const { weighInReminderDays, updateWeighInReminderDays } = useUserSettings();
   const [exporting, setExporting] = useState(false);
 
   async function handleExport() {
@@ -110,6 +112,27 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarge
           </div>
         </CollapsibleRow>
         <CollapsibleRow icon={<IconBell className="icon" />} label="Weigh-in reminders">
+          <div className="flex-between" style={{ marginBottom: 14 }}>
+            <span className="text-muted" style={{ fontSize: 13 }}>
+              Remind me after
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={weighInReminderDays}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (Number.isFinite(v) && v > 0) updateWeighInReminderDays(v);
+                }}
+                style={{ width: 60 }}
+              />
+              <span className="text-muted" style={{ fontSize: 13 }}>
+                days
+              </span>
+            </div>
+          </div>
           {!pushSupported ? (
             <p className="text-muted" style={{ fontSize: 13 }}>
               Push notifications aren't supported on this device/browser.

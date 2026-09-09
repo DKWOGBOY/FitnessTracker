@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiftSessions } from "../../hooks/useLiftSessions";
 import { useLiftAuth } from "../../context/LiftAuthContext";
+import { useNearestWeight } from "../../hooks/useWeightLogs";
+import { estimateLiftCalories } from "../../lib/liftCalorieEstimate";
 import type { ExerciseLog } from "../../lib/types";
 import { IconChevronDown, IconClose, IconPlus } from "../icons";
 import Energy from "../Energy";
@@ -11,11 +13,13 @@ interface Props {
   logs: ExerciseLog[];
   onAdd: (name: string, caloriesBurned: number) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpsertLiftEstimate: (liftSessionId: string, name: string, caloriesBurned: number) => Promise<void>;
 }
 
-export default function ExerciseCard({ date, logs, onAdd, onDelete }: Props) {
+export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLiftEstimate }: Props) {
   const { enabled, session: liftSession } = useLiftAuth();
   const { sessions, loading, error } = useLiftSessions(!!liftSession);
+  const { weightKg, loading: weightLoading } = useNearestWeight(date);
   const [expanded, setExpanded] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
@@ -27,6 +31,20 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete }: Props) {
     () => sessions.find((s) => s.session_at?.slice(0, 10) === date) ?? null,
     [sessions, date],
   );
+
+  // Auto-derives a calorie-burn estimate from the LIFT session for this day
+  // (no manual entry) - re-runs whenever the session or weight changes, but
+  // is a no-op once the stored estimate already matches (upsertLiftEstimate
+  // updates `logs`, which would otherwise retrigger this effect forever).
+  useEffect(() => {
+    if (!session || weightLoading) return;
+    const estimated = estimateLiftCalories(session, weightKg);
+    if (estimated == null) return;
+    const existing = logs.find((l) => l.lift_session_id === session.id);
+    if (existing && existing.calories_burned === estimated) return;
+    const name = session.day_name ?? session.cardio_activity ?? (session.session_type === "cardio" ? "Cardio" : "Strength training");
+    onUpsertLiftEstimate(session.id, name, estimated);
+  }, [session, weightKg, weightLoading, logs, onUpsertLiftEstimate]);
 
   return (
     <div className="card">
@@ -108,12 +126,21 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete }: Props) {
         logs.map((log) => (
           <div className="log-row" key={log.id}>
             <div className="flex-between">
-              <span className="log-row-title">{log.name}</span>
+              <span className="log-row-title">
+                {log.name}
+                {log.source === "lift_estimate" && (
+                  <span className="badge badge-muted" style={{ fontSize: 9, verticalAlign: "middle", marginLeft: 6 }}>
+                    Estimated
+                  </span>
+                )}
+              </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Energy kcal={log.calories_burned} />
-                <button className="btn btn-ghost" onClick={() => onDelete(log.id)} aria-label="Delete">
-                  <IconClose className="icon" />
-                </button>
+                {log.source === "manual" && (
+                  <button className="btn btn-ghost" onClick={() => onDelete(log.id)} aria-label="Delete">
+                    <IconClose className="icon" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
