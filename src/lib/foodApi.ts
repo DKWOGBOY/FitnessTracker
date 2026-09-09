@@ -97,10 +97,10 @@ interface CalorieApiFood {
   name: string;
   brand_name?: string | null;
   is_verified: boolean;
-  calories_100g: number;
-  protein_100g: number;
-  carbs_100g: number;
-  fat_100g: number;
+  calories_100g: number | null;
+  protein_100g: number | null;
+  carbs_100g: number | null;
+  fat_100g: number | null;
   fiber_100g?: number | null;
   sugar_100g?: number | null;
   /** Per-100g micronutrient list - sodium isn't a flat field here like it is
@@ -131,10 +131,10 @@ export async function getFoodDetails(id: number): Promise<NormalizedFoodCandidat
 
   return {
     name: f.brand_name && f.brand_name !== "Verified" ? `${f.name} (${f.brand_name})` : f.name,
-    calories: f.calories_100g,
-    protein_g: f.protein_100g,
-    carbs_g: f.carbs_100g,
-    fat_g: f.fat_100g,
+    calories: f.calories_100g ?? 0,
+    protein_g: f.protein_100g ?? 0,
+    carbs_g: f.carbs_100g ?? 0,
+    fat_g: f.fat_100g ?? 0,
     base_unit: "g",
     is_frequent: false,
     is_verified: f.is_verified,
@@ -152,10 +152,10 @@ interface CalorieApiBarcodeResult {
   product: { name: string; brand?: string | null };
   serving?: { label: string; quantity: number; unit: string } | null;
   nutrition_per_100g: {
-    energy_kcal: number;
-    protein_g: number;
-    carbohydrates_g: number;
-    fat_g: number;
+    energy_kcal: number | null;
+    protein_g: number | null;
+    carbohydrates_g: number | null;
+    fat_g: number | null;
     fiber_g?: number | null;
     sugars_g?: number | null;
     /** Grams here (unlike the food-detail endpoint's Sodium, which is mg) -
@@ -180,10 +180,10 @@ export async function getFoodByBarcode(upc: string): Promise<NormalizedFoodCandi
 
   return {
     name: r.product.brand ? `${r.product.name} (${r.product.brand})` : r.product.name,
-    calories: r.nutrition_per_100g.energy_kcal,
-    protein_g: r.nutrition_per_100g.protein_g,
-    carbs_g: r.nutrition_per_100g.carbohydrates_g,
-    fat_g: r.nutrition_per_100g.fat_g,
+    calories: r.nutrition_per_100g.energy_kcal ?? 0,
+    protein_g: r.nutrition_per_100g.protein_g ?? 0,
+    carbs_g: r.nutrition_per_100g.carbohydrates_g ?? 0,
+    fat_g: r.nutrition_per_100g.fat_g ?? 0,
     base_unit: baseUnit,
     is_frequent: false,
     is_verified: false,
