@@ -11,6 +11,7 @@ import {
   type NormalizedFoodCandidate,
 } from "../../lib/foodApi";
 import BarcodeScanner from "./BarcodeScanner";
+import MealPhotoScanModal from "./MealPhotoScanModal";
 import { useFoodLogHistory, type FoodHistoryEntry } from "../../hooks/useFoodLogHistory";
 import type { PresetItemInput } from "../../hooks/useMealPresets";
 import {
@@ -29,6 +30,7 @@ import {
 import {
   IconArrowLeft,
   IconBarcode,
+  IconCamera,
   IconCheck,
   IconChevronDown,
   IconClose,
@@ -114,6 +116,7 @@ export default function FoodSearchModal({
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [mealPhotoOpen, setMealPhotoOpen] = useState(false);
 
   const q = query.trim().toLowerCase();
 
@@ -487,6 +490,16 @@ export default function FoodSearchModal({
         )}
       </div>
 
+      {!isPicker && onAdd && onCreateFood && (
+        <button
+          className="barcode-fab camera-fab"
+          onClick={() => setMealPhotoOpen(true)}
+          aria-label="Scan meal photo"
+        >
+          <IconCamera className="icon" />
+        </button>
+      )}
+
       <button
         className="barcode-fab"
         onClick={() => setScannerOpen(true)}
@@ -619,6 +632,17 @@ export default function FoodSearchModal({
 
       {scannerOpen && (
         <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setScannerOpen(false)} />
+      )}
+
+      {mealPhotoOpen && onAdd && onCreateFood && (
+        <MealPhotoScanModal
+          meal={meal}
+          foods={foods}
+          onClose={() => setMealPhotoOpen(false)}
+          onAdd={onAdd}
+          onCreateFood={onCreateFood}
+          onFoodCreated={onFoodCreated}
+        />
       )}
     </div>
   );

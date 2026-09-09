@@ -837,6 +837,10 @@ textarea:focus {
   stroke-width: 2.2;
 }
 
+.camera-fab {
+  bottom: calc(24px + 68px + env(safe-area-inset-bottom));
+}
+
 .meal-select-wrap {
   position: relative;
   display: inline-flex;
