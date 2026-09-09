@@ -22,6 +22,7 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
   const { weightKg, loading: weightLoading } = useNearestWeight(date);
   const [expanded, setExpanded] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
 
   useEffect(() => {
     setExpanded(false);
@@ -43,7 +44,9 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
     const existing = logs.find((l) => l.lift_session_id === session.id);
     if (existing && existing.calories_burned === estimated) return;
     const name = session.day_name ?? session.cardio_activity ?? (session.session_type === "cardio" ? "Cardio" : "Strength training");
-    onUpsertLiftEstimate(session.id, name, estimated);
+    onUpsertLiftEstimate(session.id, name, estimated)
+      .then(() => setEstimateError(null))
+      .catch((err) => setEstimateError(err instanceof Error ? err.message : "Failed to save the calorie estimate."));
   }, [session, weightKg, weightLoading, logs, onUpsertLiftEstimate]);
 
   return (
@@ -119,6 +122,12 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
           <IconPlus className="icon" />
         </button>
       </div>
+
+      {estimateError && (
+        <p className="error-text" style={{ fontSize: 13, marginTop: 4 }}>
+          Couldn't save the LIFT calorie estimate: {estimateError}
+        </p>
+      )}
 
       {logs.length === 0 ? (
         <p className="empty-state">No exercise logged today.</p>
