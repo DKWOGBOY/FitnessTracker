@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { useLiftSessions } from "../../hooks/useLiftSessions";
 import { useLiftAuth } from "../../context/LiftAuthContext";
 import { useNearestWeight } from "../../hooks/useWeightLogs";
@@ -73,11 +74,9 @@ export default function ExerciseCard({ date, logs, onUpsertLiftEstimate }: Props
     return <p className="empty-state">No workout logged in LIFT today.</p>;
   }
 
-  const subtitle =
-    session.session_type === "cardio"
-      ? session.cardio_activity ?? "Cardio"
-      : (session.exercises ?? []).map((ex) => ex.name).join(" · ") || "Strength training";
-  const durationLabel = session.duration_minutes != null ? `${Math.round(session.duration_minutes)} min` : null;
+  const workoutName =
+    session.day_name ?? session.cardio_activity ?? (session.session_type === "cardio" ? "Cardio" : "Strength training");
+  const timeLabel = session.session_at ? format(parseISO(session.session_at), "h:mm a") : null;
 
   return (
     <>
@@ -91,10 +90,10 @@ export default function ExerciseCard({ date, logs, onUpsertLiftEstimate }: Props
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setExpanded((cur) => !cur)}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="meal-card-name">{session.day_name ?? "Training"}</div>
+            <div className="meal-card-name">Training</div>
             <div className="training-bar-sub">
-              {subtitle}
-              {durationLabel && ` — ${durationLabel}`}
+              {workoutName}
+              {timeLabel && ` — ${timeLabel}`}
             </div>
           </div>
           {estimatedCalories != null && (
