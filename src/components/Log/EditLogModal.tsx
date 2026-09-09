@@ -117,7 +117,6 @@ export default function EditLogModal({
               min="0"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              autoFocus
             />
           </div>
         </div>
