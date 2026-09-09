@@ -38,17 +38,6 @@ export function useExerciseLogs(date: string, seedLogs?: ExerciseLog[]) {
     refresh();
   }, [refresh]);
 
-  async function addLog(name: string, caloriesBurned: number) {
-    // user_id defaults to auth.uid() server-side - no need to fetch/send it.
-    const { data, error: err } = await supabase
-      .from("exercise_logs")
-      .insert({ name, calories_burned: caloriesBurned, log_date: date })
-      .select()
-      .single();
-    if (err) throw err;
-    setLogs((prev) => [...prev, data as ExerciseLog]);
-  }
-
   async function deleteLog(id: string) {
     const { error: err } = await supabase.from("exercise_logs").delete().eq("id", id);
     if (err) throw err;
@@ -75,5 +64,5 @@ export function useExerciseLogs(date: string, seedLogs?: ExerciseLog[]) {
     });
   }
 
-  return { logs, loading, error, refresh, addLog, deleteLog, upsertLiftEstimate };
+  return { logs, loading, error, refresh, deleteLog, upsertLiftEstimate };
 }

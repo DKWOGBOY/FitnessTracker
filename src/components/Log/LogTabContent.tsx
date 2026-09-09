@@ -52,12 +52,10 @@ export default function LogTabContent({
   );
   const { litres, setLitres } = useWaterLog(date, initialData?.waterLitres);
   const { weighInReminderDays } = useUserSettings();
-  const {
-    logs: exerciseLogs,
-    addLog: addExerciseLog,
-    deleteLog: deleteExerciseLog,
-    upsertLiftEstimate,
-  } = useExerciseLogs(date, initialData?.exerciseLogs);
+  const { logs: exerciseLogs, deleteLog: deleteExerciseLog, upsertLiftEstimate } = useExerciseLogs(
+    date,
+    initialData?.exerciseLogs,
+  );
 
   const consumed = sumMacros(logs.map((l) => macrosForLog(l)));
   const target = targetForDate(date);
@@ -92,13 +90,7 @@ export default function LogTabContent({
       ))}
 
       <div className="section-title">Exercise</div>
-      <ExerciseCard
-        date={date}
-        logs={exerciseLogs}
-        onAdd={addExerciseLog}
-        onDelete={deleteExerciseLog}
-        onUpsertLiftEstimate={upsertLiftEstimate}
-      />
+      <ExerciseCard date={date} logs={exerciseLogs} onDelete={deleteExerciseLog} onUpsertLiftEstimate={upsertLiftEstimate} />
 
       {modalMeal && (
         <FoodSearchModal

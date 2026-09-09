@@ -4,24 +4,21 @@ import { useLiftAuth } from "../../context/LiftAuthContext";
 import { useNearestWeight } from "../../hooks/useWeightLogs";
 import { estimateLiftCalories } from "../../lib/liftCalorieEstimate";
 import type { ExerciseLog } from "../../lib/types";
-import { IconChevronDown, IconClose, IconPlus } from "../icons";
+import { IconChevronDown, IconClose } from "../icons";
 import Energy from "../Energy";
-import ExerciseLogForm from "./ExerciseLogForm";
 
 interface Props {
   date: string;
   logs: ExerciseLog[];
-  onAdd: (name: string, caloriesBurned: number) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onUpsertLiftEstimate: (liftSessionId: string, name: string, caloriesBurned: number) => Promise<void>;
 }
 
-export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLiftEstimate }: Props) {
+export default function ExerciseCard({ date, logs, onDelete, onUpsertLiftEstimate }: Props) {
   const { enabled, session: liftSession } = useLiftAuth();
   const { sessions, loading, error } = useLiftSessions(!!liftSession);
   const { weightKg, loading: weightLoading } = useNearestWeight(date);
   const [expanded, setExpanded] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,12 +113,7 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
         </>
       )}
 
-      <div className="flex-between">
-        <h3>Calories burned</h3>
-        <button className="btn btn-pill btn-pill-icon" onClick={() => setShowForm(true)} aria-label="Add exercise">
-          <IconPlus className="icon" />
-        </button>
-      </div>
+      <h3>Calories burned</h3>
 
       {estimateError && (
         <p className="error-text" style={{ fontSize: 13, marginTop: 4 }}>
@@ -130,7 +122,7 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
       )}
 
       {logs.length === 0 ? (
-        <p className="empty-state">No exercise logged today.</p>
+        <p className="empty-state">No LIFT workout logged today.</p>
       ) : (
         logs.map((log) => (
           <div className="log-row" key={log.id}>
@@ -155,8 +147,6 @@ export default function ExerciseCard({ date, logs, onAdd, onDelete, onUpsertLift
           </div>
         ))
       )}
-
-      {showForm && <ExerciseLogForm onClose={() => setShowForm(false)} onSave={onAdd} />}
     </div>
   );
 }
