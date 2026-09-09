@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { shiftDate, todayStr } from "../lib/dates";
-import type { Food, FoodLogWithFood, FoodServing, MealPresetWithItems, Target } from "../lib/types";
+import type { ExerciseLog, Food, FoodLogWithFood, FoodServing, MealPresetWithItems, Target } from "../lib/types";
 
 export interface LogPageInitialData {
   foods: Food[];
@@ -9,6 +9,7 @@ export interface LogPageInitialData {
   logs: FoodLogWithFood[];
   targets: Target[];
   presets: MealPresetWithItems[];
+  exerciseLogs: ExerciseLog[];
   streakFoodDates: string[];
   streakWeightDates: string[];
   waterLitres: number;
@@ -20,6 +21,7 @@ interface LogPageRpcRow {
   food_logs: FoodLogWithFood[];
   targets: Target[];
   meal_presets: MealPresetWithItems[];
+  exercise_logs: ExerciseLog[];
   streak_food_dates: string[];
   streak_weight_dates: string[];
   water_litres: number;
@@ -56,6 +58,7 @@ export function useLogPageInitialData(date: string) {
           logs: r.food_logs,
           targets: r.targets,
           presets: r.meal_presets,
+          exerciseLogs: r.exercise_logs,
           streakFoodDates: r.streak_food_dates,
           streakWeightDates: r.streak_weight_dates,
           waterLitres: r.water_litres,

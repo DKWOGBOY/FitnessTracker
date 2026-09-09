@@ -25,8 +25,8 @@ interface Props {
   onClose: () => void;
   onCreateFood: (input: FoodInput) => Promise<Food>;
   onFoodCreated: (food: Food) => void;
-  onSave?: (name: string, defaultMeal: Meal, items: PresetItemInput[]) => Promise<void>;
-  onUpdate?: (id: string, name: string, items: PresetItemInput[]) => Promise<void>;
+  onSave?: (name: string, defaultMeal: Meal, items: PresetItemInput[], servingsCount: number) => Promise<void>;
+  onUpdate?: (id: string, name: string, items: PresetItemInput[], servingsCount: number) => Promise<void>;
 }
 
 interface BuilderItem {
@@ -54,6 +54,7 @@ export default function MealBuilder({
 }: Props) {
   const { energyUnit } = useEnergyUnit();
   const [name, setName] = useState(preset?.name ?? "");
+  const [servingsCount, setServingsCount] = useState(preset?.servings_count ?? 1);
   const [items, setItems] = useState<BuilderItem[]>(
     () => preset?.items.map((i) => ({ food: i.food, serving: i.serving, quantity: i.quantity })) ?? [],
   );
@@ -74,9 +75,17 @@ export default function MealBuilder({
     { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   );
 
-  const carbsKcal = totals.carbs_g * 4;
-  const fatKcal = totals.fat_g * 9;
-  const proteinKcal = totals.protein_g * 4;
+  const perServingDivisor = servingsCount > 0 ? servingsCount : 1;
+  const perServing = {
+    calories: totals.calories / perServingDivisor,
+    protein_g: totals.protein_g / perServingDivisor,
+    carbs_g: totals.carbs_g / perServingDivisor,
+    fat_g: totals.fat_g / perServingDivisor,
+  };
+
+  const carbsKcal = perServing.carbs_g * 4;
+  const fatKcal = perServing.fat_g * 9;
+  const proteinKcal = perServing.protein_g * 4;
 
   function addItem(food: Food, serving: FoodServing | null, quantity = 1) {
     setItems((prev) => {
@@ -106,9 +115,9 @@ export default function MealBuilder({
         quantity: i.quantity,
       }));
       if (preset) {
-        await onUpdate?.(preset.id, name.trim(), itemInputs);
+        await onUpdate?.(preset.id, name.trim(), itemInputs, servingsCount);
       } else {
-        await onSave?.(name.trim(), DEFAULT_MEAL, itemInputs);
+        await onSave?.(name.trim(), DEFAULT_MEAL, itemInputs, servingsCount);
       }
     } finally {
       setSaving(false);
@@ -125,39 +134,57 @@ export default function MealBuilder({
       </div>
 
       <div className="screen-body">
-        <div className="field">
-          <label>Meal title</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        <div className="field-row">
+          <div className="field" style={{ flex: 2 }}>
+            <label>Meal title</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+          <div className="field">
+            <label>Servings</label>
+            <input
+              type="number"
+              step="1"
+              min="1"
+              value={servingsCount}
+              onChange={(e) => setServingsCount(Math.max(1, parseFloat(e.target.value) || 1))}
+            />
+          </div>
         </div>
+
+        <p className="text-muted" style={{ fontSize: 12, marginTop: -6, marginBottom: 12 }}>
+          {servingsCount > 1
+            ? `Makes ${servingsCount} servings - macros below are per serving.`
+            : "Makes 1 serving."}
+        </p>
 
         <div className="card meal-totals-card">
           <div className="ring-wrap" style={{ width: 76, height: 76 }}>
             <ProgressRing pct={0} color="var(--color-primary)" trackColor="var(--color-bg-alt)" size={76} thickness={8} />
             <div className="ring-center">
-              <span className="meal-totals-kcal">{formatEnergy(totals.calories, energyUnit)}</span>
+              <span className="meal-totals-kcal">{formatEnergy(perServing.calories, energyUnit)}</span>
               <span className="meal-totals-kcal-unit">{energyUnitLabel(energyUnit)}</span>
             </div>
           </div>
           <div className="meal-totals-cols">
             <div className="meal-totals-col">
               <span className="meal-totals-pct" style={{ color: "var(--color-carbs)" }}>
-                {macroPct(carbsKcal, totals.calories)}%
+                {macroPct(carbsKcal, perServing.calories)}%
               </span>
-              <span className="meal-totals-g">{Math.round(totals.carbs_g)} g</span>
+              <span className="meal-totals-g">{Math.round(perServing.carbs_g)} g</span>
               <span className="meal-totals-label">Carbs</span>
             </div>
             <div className="meal-totals-col">
               <span className="meal-totals-pct" style={{ color: "var(--color-fat)" }}>
-                {macroPct(fatKcal, totals.calories)}%
+                {macroPct(fatKcal, perServing.calories)}%
               </span>
-              <span className="meal-totals-g">{Math.round(totals.fat_g)} g</span>
+              <span className="meal-totals-g">{Math.round(perServing.fat_g)} g</span>
               <span className="meal-totals-label">Fat</span>
             </div>
             <div className="meal-totals-col">
               <span className="meal-totals-pct" style={{ color: "var(--color-protein)" }}>
-                {macroPct(proteinKcal, totals.calories)}%
+                {macroPct(proteinKcal, perServing.calories)}%
               </span>
-              <span className="meal-totals-g">{Math.round(totals.protein_g)} g</span>
+              <span className="meal-totals-g">{Math.round(perServing.protein_g)} g</span>
               <span className="meal-totals-label">Protein</span>
             </div>
           </div>

@@ -33,12 +33,18 @@ export function useFoodLogsRange(fromDate: string | null) {
           protein_g: 0,
           carbs_g: 0,
           fat_g: 0,
+          fiber_g: 0,
+          sugar_g: 0,
+          sodium_mg: 0,
         };
         byDate.set(row.log_date, {
           calories: existing.calories + m.calories,
           protein_g: existing.protein_g + m.protein_g,
           carbs_g: existing.carbs_g + m.carbs_g,
           fat_g: existing.fat_g + m.fat_g,
+          fiber_g: existing.fiber_g + m.fiber_g,
+          sugar_g: existing.sugar_g + m.sugar_g,
+          sodium_mg: existing.sodium_mg + m.sodium_mg,
         });
       }
 

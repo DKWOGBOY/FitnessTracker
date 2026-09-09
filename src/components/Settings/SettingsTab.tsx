@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { useTargets } from "../../hooks/useTargets";
+import { usePushSubscription } from "../../hooks/usePushSubscription";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, toCsv } from "../../lib/csv";
 import { todayStr } from "../../lib/dates";
 import type { UnitSystem } from "../../lib/units";
-import { IconDownload, IconFlame, IconLink, IconRuler, IconTarget, IconUser, IconWaterGlass } from "../icons";
+import { IconBell, IconDownload, IconFlame, IconLink, IconRuler, IconTarget, IconUser, IconWaterGlass } from "../icons";
 import TdeeCalculator from "./TdeeCalculator";
 import ManualTargetForm from "./ManualTargetForm";
 import LiftLoginForm from "./LiftLoginForm";
@@ -23,6 +24,7 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarge
   const { user, signOut } = useAuth();
   const { energyUnit, setEnergyUnit } = useEnergyUnit();
   const { currentTarget, addTarget } = useTargets();
+  const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, error: pushError, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushSubscription();
   const [exporting, setExporting] = useState(false);
 
   async function handleExport() {
@@ -106,6 +108,35 @@ export default function SettingsTab({ unitSystem, onUnitSystemChange, waterTarge
               Kilojoules (kJ)
             </button>
           </div>
+        </CollapsibleRow>
+        <CollapsibleRow icon={<IconBell className="icon" />} label="Weigh-in reminders">
+          {!pushSupported ? (
+            <p className="text-muted" style={{ fontSize: 13 }}>
+              Push notifications aren't supported on this device/browser.
+            </p>
+          ) : (
+            <>
+              <div className="flex-between">
+                <span className="text-muted" style={{ fontSize: 13 }}>
+                  {pushSubscribed
+                    ? "Notified when you're overdue for a weigh-in."
+                    : "Get notified when you're overdue for a weigh-in."}
+                </span>
+                <button
+                  className={pushSubscribed ? "btn btn-secondary" : "btn btn-primary"}
+                  onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+                  disabled={pushLoading}
+                >
+                  {pushSubscribed ? "Disable" : "Enable"}
+                </button>
+              </div>
+              {pushError && (
+                <p className="error-text" style={{ fontSize: 12, marginTop: 8 }}>
+                  {pushError}
+                </p>
+              )}
+            </>
+          )}
         </CollapsibleRow>
         <CollapsibleRow icon={<IconWaterGlass className="icon" />} label="Water target">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

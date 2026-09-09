@@ -36,24 +36,34 @@ async function computeAggregateMacros(items: PresetItemInput[]) {
         protein_g: acc.protein_g + m.protein_g,
         carbs_g: acc.carbs_g + m.carbs_g,
         fat_g: acc.fat_g + m.fat_g,
+        fiber_g: acc.fiber_g + m.fiber_g,
+        sugar_g: acc.sugar_g + m.sugar_g,
+        sodium_mg: acc.sodium_mg + m.sodium_mg,
       };
     },
-    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0, sodium_mg: 0 },
   );
 }
 
-/** Every meal-aggregate food is "1 piece = the whole meal" so it can be
- * logged/scaled through the exact same machinery as a normal food. */
-async function ensureAggregateServing(foodId: string) {
+/** Every meal-aggregate food has exactly one serving, "1 serving", sized so
+ * that quantity 1 logs 1/servingsCount of the combined ingredient totals -
+ * lets a recipe that yields multiple servings be logged a serving at a time
+ * through the exact same machinery as a normal food. Creates the row if
+ * missing, otherwise updates its size (servings_count can change on edit). */
+async function setAggregateServing(foodId: string, servingsCount: number) {
+  const gramsEquivalent = 100 / servingsCount;
   const { data: existing } = await supabase
     .from("food_servings")
     .select("id")
     .eq("food_id", foodId)
     .maybeSingle();
-  if (existing) return;
-  await supabase
-    .from("food_servings")
-    .insert({ food_id: foodId, label: "1 meal", grams_equivalent: 100, is_default: true });
+  if (existing) {
+    await supabase.from("food_servings").update({ grams_equivalent: gramsEquivalent }).eq("id", existing.id);
+  } else {
+    await supabase
+      .from("food_servings")
+      .insert({ food_id: foodId, label: "1 serving", grams_equivalent: gramsEquivalent, is_default: true });
+  }
 }
 
 /** Any preset saved before aggregate foods existed won't have food_id yet -
@@ -79,7 +89,7 @@ async function backfillMissingAggregates(rows: MealPresetWithItems[]) {
       .select()
       .single();
     if (aggFood) {
-      await ensureAggregateServing(aggFood.id);
+      await setAggregateServing(aggFood.id, preset.servings_count || 1);
       await supabase.from("meal_presets").update({ food_id: aggFood.id }).eq("id", preset.id);
       preset.food_id = aggFood.id;
       preset.food = aggFood as Food;
@@ -124,7 +134,7 @@ export function useMealPresets(seed?: MealPresetWithItems[]) {
     refresh();
   }, [refresh]);
 
-  async function savePreset(name: string, defaultMeal: Meal, items: PresetItemInput[]) {
+  async function savePreset(name: string, defaultMeal: Meal, items: PresetItemInput[], servingsCount = 1) {
     // user_id defaults to auth.uid() server-side on every insert below.
     const totals = await computeAggregateMacros(items);
 
@@ -141,11 +151,11 @@ export function useMealPresets(seed?: MealPresetWithItems[]) {
       .select()
       .single();
     if (aggErr) throw aggErr;
-    await ensureAggregateServing(aggFood.id);
+    await setAggregateServing(aggFood.id, servingsCount);
 
     const { data: preset, error: presetErr } = await supabase
       .from("meal_presets")
-      .insert({ name, default_meal: defaultMeal, food_id: aggFood.id })
+      .insert({ name, default_meal: defaultMeal, food_id: aggFood.id, servings_count: servingsCount })
       .select()
       .single();
     if (presetErr) throw presetErr;
@@ -162,7 +172,7 @@ export function useMealPresets(seed?: MealPresetWithItems[]) {
     await refresh();
   }
 
-  async function updatePreset(id: string, name: string, items: PresetItemInput[]) {
+  async function updatePreset(id: string, name: string, items: PresetItemInput[], servingsCount = 1) {
     const preset = presets.find((p) => p.id === id);
     if (!preset) throw new Error("Preset not found.");
 
@@ -174,9 +184,13 @@ export function useMealPresets(seed?: MealPresetWithItems[]) {
         .update({ name, ...totals })
         .eq("id", preset.food_id);
       if (foodErr) throw foodErr;
+      await setAggregateServing(preset.food_id, servingsCount);
     }
 
-    const { error: presetErr } = await supabase.from("meal_presets").update({ name }).eq("id", id);
+    const { error: presetErr } = await supabase
+      .from("meal_presets")
+      .update({ name, servings_count: servingsCount })
+      .eq("id", id);
     if (presetErr) throw presetErr;
 
     const { error: deleteItemsErr } = await supabase.from("meal_preset_items").delete().eq("preset_id", id);

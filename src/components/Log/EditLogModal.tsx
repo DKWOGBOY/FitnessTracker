@@ -24,7 +24,7 @@ interface Props {
   presets: MealPresetWithItems[];
   onCreateFood: (input: FoodInput) => Promise<Food>;
   onFoodCreated: (food: Food) => void;
-  onUpdatePreset: (id: string, name: string, items: PresetItemInput[]) => Promise<void>;
+  onUpdatePreset: (id: string, name: string, items: PresetItemInput[], servingsCount: number) => Promise<void>;
   onMealEdited: () => void;
 }
 
@@ -135,6 +135,16 @@ export default function EditLogModal({
               P {Math.round(macros.protein_g)}g · C {Math.round(macros.carbs_g)}g · F {Math.round(macros.fat_g)}g
             </span>
           </div>
+          {(log.food.fiber_g != null || log.food.sugar_g != null || log.food.sodium_mg != null) && (
+            <div className="flex-between" style={{ marginTop: 4 }}>
+              <span />
+              <span className="text-muted" style={{ fontSize: 12 }}>
+                {log.food.fiber_g != null && `Fiber ${Math.round(macros.fiber_g)}g · `}
+                {log.food.sugar_g != null && `Sugar ${Math.round(macros.sugar_g)}g · `}
+                {log.food.sodium_mg != null && `Sodium ${Math.round(macros.sodium_mg)}mg`}
+              </span>
+            </div>
+          )}
         </div>
 
         {matchingPreset && (
@@ -165,8 +175,8 @@ export default function EditLogModal({
           onClose={() => setShowMealBuilder(false)}
           onCreateFood={onCreateFood}
           onFoodCreated={onFoodCreated}
-          onUpdate={async (id, name, items) => {
-            await onUpdatePreset(id, name, items);
+          onUpdate={async (id, name, items, servingsCount) => {
+            await onUpdatePreset(id, name, items, servingsCount);
             onMealEdited();
             setShowMealBuilder(false);
             onClose();

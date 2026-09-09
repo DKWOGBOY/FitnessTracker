@@ -101,8 +101,18 @@ interface CalorieApiFood {
   protein_100g: number;
   carbs_100g: number;
   fat_100g: number;
+  fiber_100g?: number | null;
+  sugar_100g?: number | null;
+  /** Per-100g micronutrient list - sodium isn't a flat field here like it is
+   * on the barcode endpoint, so it's pulled out of this array by name. */
+  nutrients?: { name: string; unit: string; amount: number }[];
   verified_portions?: CalorieApiPortion[];
   default_portion?: CalorieApiPortion;
+}
+
+function findNutrient(nutrients: { name: string; unit: string; amount: number }[] | undefined, name: string): number | null {
+  const n = nutrients?.find((x) => x.name.toLowerCase() === name.toLowerCase());
+  return n ? n.amount : null;
 }
 
 /** Fetches the full food record once the user picks a suggestion - only
@@ -128,6 +138,9 @@ export async function getFoodDetails(id: number): Promise<NormalizedFoodCandidat
     base_unit: "g",
     is_frequent: false,
     is_verified: f.is_verified,
+    fiber_g: f.fiber_100g ?? null,
+    sugar_g: f.sugar_100g ?? null,
+    sodium_mg: findNutrient(f.nutrients, "Sodium"),
     source: "calorieapi",
     source_id: String(f.id),
     extraServings,
@@ -143,6 +156,11 @@ interface CalorieApiBarcodeResult {
     protein_g: number;
     carbohydrates_g: number;
     fat_g: number;
+    fiber_g?: number | null;
+    sugars_g?: number | null;
+    /** Grams here (unlike the food-detail endpoint's Sodium, which is mg) -
+     * converted to mg below to match the `foods.sodium_mg` column. */
+    sodium_g?: number | null;
   };
 }
 
@@ -169,6 +187,9 @@ export async function getFoodByBarcode(upc: string): Promise<NormalizedFoodCandi
     base_unit: baseUnit,
     is_frequent: false,
     is_verified: false,
+    fiber_g: r.nutrition_per_100g.fiber_g ?? null,
+    sugar_g: r.nutrition_per_100g.sugars_g ?? null,
+    sodium_mg: r.nutrition_per_100g.sodium_g != null ? r.nutrition_per_100g.sodium_g * 1000 : null,
     source: "calorieapi",
     source_id: `barcode:${r.barcode}`,
     extraServings,

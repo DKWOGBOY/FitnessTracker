@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { MEALS, macrosForLog, sumMacros, type Food, type FoodServing, type Macros, type Meal } from "../lib/types";
 
-const ZERO_MACROS: Macros = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+const ZERO_MACROS: Macros = {
+  calories: 0,
+  protein_g: 0,
+  carbs_g: 0,
+  fat_g: 0,
+  fiber_g: 0,
+  sugar_g: 0,
+  sodium_mg: 0,
+};
 
 /**
  * Aggregates every food_logs row between fromDate and toDate (inclusive)

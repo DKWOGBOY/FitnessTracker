@@ -8,6 +8,7 @@ interface Props {
   consumed: Macros;
   target: Target | null;
   streak: number;
+  burned: number;
 }
 
 const RING_TRACK = "rgba(255, 255, 255, 0.28)";
@@ -41,12 +42,12 @@ function MacroRing({
   );
 }
 
-export default function DailySummary({ consumed, target, streak }: Props) {
+export default function DailySummary({ consumed, target, streak, burned }: Props) {
   const { energyUnit } = useEnergyUnit();
   const unitLabel = energyUnitLabel(energyUnit);
   const calorieTarget = target?.calories ?? null;
   const calorieConsumed = consumed.calories;
-  const remaining = calorieTarget !== null ? calorieTarget - calorieConsumed : null;
+  const remaining = calorieTarget !== null ? calorieTarget - calorieConsumed + burned : null;
   const pct = calorieTarget ? (calorieConsumed / calorieTarget) * 100 : 0;
 
   return (
@@ -73,6 +74,12 @@ export default function DailySummary({ consumed, target, streak }: Props) {
             ? `${formatEnergy(Math.abs(remaining), energyUnit)} ${unitLabel} over your ${formatEnergy(calorieTarget, energyUnit)} target`
             : `${formatEnergy(remaining ?? 0, energyUnit)} ${unitLabel} left of ${formatEnergy(calorieTarget, energyUnit)}`
           : "No target set — head to Settings"}
+        {burned > 0 && (
+          <>
+            {" "}
+            · {formatEnergy(burned, energyUnit)} {unitLabel} burned
+          </>
+        )}
       </div>
 
       <div className="macro-ring-row">

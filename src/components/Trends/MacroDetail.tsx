@@ -20,6 +20,12 @@ const MACROS_CONFIG = [
   { key: "protein_g" as const, label: "Protein", color: "var(--color-protein)", kcalPerGram: 4 },
 ];
 
+const EXTENDED_NUTRIENTS_CONFIG = [
+  { key: "fiber_g" as const, label: "Fiber", unit: "g" },
+  { key: "sugar_g" as const, label: "Sugar", unit: "g" },
+  { key: "sodium_mg" as const, label: "Sodium", unit: "mg" },
+];
+
 export default function MacroDetail({ onClose }: Props) {
   const [range, setRange] = useState<Range>("day");
   const days = RANGE_DAYS[range];
@@ -121,6 +127,22 @@ export default function MacroDetail({ onClose }: Props) {
             </div>
           );
         })}
+
+        {!loading && pieTotal > 0 && (
+          <div className="card" style={{ marginBottom: 12 }}>
+            <div className="section-title" style={{ marginTop: 0 }}>
+              Extended nutrients
+            </div>
+            {EXTENDED_NUTRIENTS_CONFIG.map(({ key, label, unit }) => (
+              <div className="list-row" key={key}>
+                <span>{label}</span>
+                <strong>
+                  {Math.round(totals[key])} {unit}
+                </strong>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

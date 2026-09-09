@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiftSessions } from "../../hooks/useLiftSessions";
 import { useLiftAuth } from "../../context/LiftAuthContext";
-import { IconChevronDown } from "../icons";
+import type { ExerciseLog } from "../../lib/types";
+import { IconChevronDown, IconClose, IconPlus } from "../icons";
+import Energy from "../Energy";
+import ExerciseLogForm from "./ExerciseLogForm";
 
 interface Props {
   date: string;
+  logs: ExerciseLog[];
+  onAdd: (name: string, caloriesBurned: number) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
-export default function ExerciseCard({ date }: Props) {
+export default function ExerciseCard({ date, logs, onAdd, onDelete }: Props) {
   const { enabled, session: liftSession } = useLiftAuth();
   const { sessions, loading, error } = useLiftSessions(!!liftSession);
   const [expanded, setExpanded] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     setExpanded(false);
@@ -21,68 +28,99 @@ export default function ExerciseCard({ date }: Props) {
     [sessions, date],
   );
 
-  if (!enabled) return null;
-
   return (
     <div className="card">
-      <div
-        className="flex-between"
-        style={{ cursor: session ? "pointer" : "default" }}
-        onClick={() => session && setExpanded((e) => !e)}
-      >
-        <h3>{session ? session.day_name ?? session.cardio_activity ?? "Exercise" : "Exercise"}</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {session?.duration_minutes != null && <strong>{Math.round(session.duration_minutes)} min</strong>}
-          {session && (
-            <span
-              style={{
-                display: "inline-flex",
-                transform: expanded ? "rotate(180deg)" : "none",
-                transition: "transform 0.15s ease",
-              }}
-            >
-              <IconChevronDown className="icon" />
-            </span>
+      {enabled && (
+        <>
+          <div
+            className="flex-between"
+            style={{ cursor: session ? "pointer" : "default" }}
+            onClick={() => session && setExpanded((e) => !e)}
+          >
+            <h3>{session ? session.day_name ?? session.cardio_activity ?? "Exercise" : "Exercise"}</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {session?.duration_minutes != null && <strong>{Math.round(session.duration_minutes)} min</strong>}
+              {session && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    transform: expanded ? "rotate(180deg)" : "none",
+                    transition: "transform 0.15s ease",
+                  }}
+                >
+                  <IconChevronDown className="icon" />
+                </span>
+              )}
+            </div>
+          </div>
+
+          {!liftSession ? (
+            <p className="empty-state">Log into LIFT in Settings to see your workouts here.</p>
+          ) : loading ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+              <div className="spinner" />
+            </div>
+          ) : error ? (
+            <p className="error-text" style={{ fontSize: 13, marginTop: 8 }}>
+              Couldn't load LIFT data: {error}
+            </p>
+          ) : !session ? (
+            <p className="empty-state">No workout logged in LIFT today.</p>
+          ) : (
+            expanded && (
+              <div style={{ marginTop: 8 }}>
+                {session.session_type === "cardio" ? (
+                  <div className="log-row">
+                    <div className="list-row-sub">Effort {session.cardio_effort ?? "-"}/5</div>
+                  </div>
+                ) : (session.exercises ?? []).length === 0 ? (
+                  <p className="empty-state">No exercises recorded.</p>
+                ) : (
+                  (session.exercises ?? []).map((ex) => (
+                    <div className="log-row" key={ex.exId}>
+                      <span className="log-row-title">{ex.name}</span>
+                      <div className="list-row-sub">
+                        {ex.sets.length === 0
+                          ? "No sets recorded"
+                          : ex.sets.map((set) => `${set.reps}×${set.weight}kg`).join(", ")}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )
           )}
-        </div>
+
+          <div style={{ height: 1, background: "var(--color-border)", margin: "12px 0" }} />
+        </>
+      )}
+
+      <div className="flex-between">
+        <h3>Calories burned</h3>
+        <button className="btn btn-pill btn-pill-icon" onClick={() => setShowForm(true)} aria-label="Add exercise">
+          <IconPlus className="icon" />
+        </button>
       </div>
 
-      {!liftSession ? (
-        <p className="empty-state">Log into LIFT in Settings to see your workouts here.</p>
-      ) : loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
-          <div className="spinner" />
-        </div>
-      ) : error ? (
-        <p className="error-text" style={{ fontSize: 13, marginTop: 8 }}>
-          Couldn't load LIFT data: {error}
-        </p>
-      ) : !session ? (
-        <p className="empty-state">No workout logged in LIFT today.</p>
+      {logs.length === 0 ? (
+        <p className="empty-state">No exercise logged today.</p>
       ) : (
-        expanded && (
-          <div style={{ marginTop: 8 }}>
-            {session.session_type === "cardio" ? (
-              <div className="log-row">
-                <div className="list-row-sub">Effort {session.cardio_effort ?? "-"}/5</div>
+        logs.map((log) => (
+          <div className="log-row" key={log.id}>
+            <div className="flex-between">
+              <span className="log-row-title">{log.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Energy kcal={log.calories_burned} />
+                <button className="btn btn-ghost" onClick={() => onDelete(log.id)} aria-label="Delete">
+                  <IconClose className="icon" />
+                </button>
               </div>
-            ) : (session.exercises ?? []).length === 0 ? (
-              <p className="empty-state">No exercises recorded.</p>
-            ) : (
-              (session.exercises ?? []).map((ex) => (
-                <div className="log-row" key={ex.exId}>
-                  <span className="log-row-title">{ex.name}</span>
-                  <div className="list-row-sub">
-                    {ex.sets.length === 0
-                      ? "No sets recorded"
-                      : ex.sets.map((set) => `${set.reps}×${set.weight}kg`).join(", ")}
-                  </div>
-                </div>
-              ))
-            )}
+            </div>
           </div>
-        )
+        ))
       )}
+
+      {showForm && <ExerciseLogForm onClose={() => setShowForm(false)} onSave={onAdd} />}
     </div>
   );
 }

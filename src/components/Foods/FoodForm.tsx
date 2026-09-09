@@ -25,6 +25,9 @@ export default function FoodForm({ food, existingServings = [], onClose, onSave 
   const [fat, setFat] = useState(String(food?.fat_g ?? ""));
   const [baseUnit, setBaseUnit] = useState<BaseUnit>(food?.base_unit ?? "g");
   const [isFrequent, setIsFrequent] = useState(food?.is_frequent ?? false);
+  const [fiber, setFiber] = useState(food?.fiber_g != null ? String(food.fiber_g) : "");
+  const [sugar, setSugar] = useState(food?.sugar_g != null ? String(food.sugar_g) : "");
+  const [sodium, setSodium] = useState(food?.sodium_mg != null ? String(food.sodium_mg) : "");
   const [extraServings, setExtraServings] = useState<ExtraServingRow[]>(() =>
     existingServings
       .filter((s) => s.label !== AUTO_LABEL(food?.base_unit ?? "g"))
@@ -34,6 +37,7 @@ export default function FoodForm({ food, existingServings = [], onClose, onSave 
   const [error, setError] = useState<string | null>(null);
 
   const num = (s: string) => parseFloat(s) || 0;
+  const numOrNull = (s: string) => (s.trim() === "" ? null : parseFloat(s) || 0);
 
   function addServingRow() {
     setExtraServings((prev) => [...prev, { label: "", grams: "", isDefault: prev.length === 0 }]);
@@ -73,6 +77,9 @@ export default function FoodForm({ food, existingServings = [], onClose, onSave 
           source_id: food?.source_id ?? null,
           is_frequent: isFrequent,
           is_verified: food?.is_verified ?? false,
+          fiber_g: numOrNull(fiber),
+          sugar_g: numOrNull(sugar),
+          sodium_mg: numOrNull(sodium),
         },
         validRows.map((r) => ({
           label: r.label.trim(),
@@ -135,6 +142,25 @@ export default function FoodForm({ food, existingServings = [], onClose, onSave 
             <div className="field">
               <label>Fat (g)</label>
               <input type="number" step="0.1" value={fat} onChange={(e) => setFat(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="section-title" style={{ marginTop: 4 }}>
+            Extended nutrients (optional)
+          </div>
+
+          <div className="field-row">
+            <div className="field">
+              <label>Fiber (g)</label>
+              <input type="number" step="0.1" placeholder="—" value={fiber} onChange={(e) => setFiber(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Sugar (g)</label>
+              <input type="number" step="0.1" placeholder="—" value={sugar} onChange={(e) => setSugar(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Sodium (mg)</label>
+              <input type="number" step="1" placeholder="—" value={sodium} onChange={(e) => setSodium(e.target.value)} />
             </div>
           </div>
 

@@ -51,7 +51,7 @@ interface Props {
   onFoodCreated: (food: Food) => void;
   onDeletePreset?: (id: string) => void;
   onCreateFood?: (input: FoodInput) => Promise<Food>;
-  onSaveMeal?: (name: string, defaultMeal: Meal, items: PresetItemInput[]) => Promise<void>;
+  onSaveMeal?: (name: string, defaultMeal: Meal, items: PresetItemInput[], servingsCount: number) => Promise<void>;
 }
 
 type ScreenTab = "history" | "meals" | "foods" | "search";
@@ -607,8 +607,8 @@ export default function FoodSearchModal({
           onClose={() => setShowMealBuilder(false)}
           onCreateFood={onCreateFood}
           onFoodCreated={onFoodCreated}
-          onSave={async (name, defaultMeal, items) => {
-            await onSaveMeal(name, defaultMeal, items);
+          onSave={async (name, defaultMeal, items, servingsCount) => {
+            await onSaveMeal(name, defaultMeal, items, servingsCount);
             setShowMealBuilder(false);
           }}
         />

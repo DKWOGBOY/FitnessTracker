@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import { useLogAggregates } from "../../hooks/useLogAggregates";
+import { useExerciseAggregate } from "../../hooks/useExerciseAggregate";
 import { useTargets } from "../../hooks/useTargets";
 import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { energyUnitLabel, formatEnergy } from "../../lib/energy";
@@ -42,6 +43,7 @@ export default function CalorieDetail({ onClose }: Props) {
   }, [range]);
 
   const { totals, byMeal, loading } = useLogAggregates(fromDate, toDate);
+  const { burned } = useExerciseAggregate(fromDate, toDate);
   const { targetForDate } = useTargets();
 
   const goal = (targetForDate(todayStr())?.calories ?? 0) * RANGE_DAYS[range];
@@ -132,6 +134,18 @@ export default function CalorieDetail({ onClose }: Props) {
             <span>Goal</span>
             <strong>{formatEnergy(goal, energyUnit)}</strong>
           </div>
+          {burned > 0 && (
+            <>
+              <div className="list-row">
+                <span>Burned</span>
+                <strong>{formatEnergy(burned, energyUnit)}</strong>
+              </div>
+              <div className="list-row">
+                <span>Net</span>
+                <strong>{formatEnergy(totals.calories - burned, energyUnit)}</strong>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

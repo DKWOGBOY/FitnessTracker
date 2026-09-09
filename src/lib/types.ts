@@ -38,6 +38,11 @@ export interface Food {
   /** CalorieAPI-imported foods with curated macros + real household portions;
    * false for manual entries and foods from other sources. Shown as a badge. */
   is_verified: boolean;
+  /** Per-100g/100ml, same basis as the macros above. Null means "unknown"
+   * (not captured, or entered manually without it) rather than zero. */
+  fiber_g: number | null;
+  sugar_g: number | null;
+  sodium_mg: number | null;
   created_at: string;
 }
 
@@ -72,6 +77,17 @@ export interface FoodLogWithFood extends FoodLog {
   serving: FoodServing | null;
 }
 
+/** A manual "I did X, burned Y kcal" entry - independent of the read-only
+ * LIFT integration, which has no calorie estimate of its own. */
+export interface ExerciseLog {
+  id: string;
+  user_id: string;
+  log_date: string;
+  name: string;
+  calories_burned: number;
+  created_at: string;
+}
+
 export interface WeightLog {
   id: string;
   user_id: string;
@@ -96,6 +112,9 @@ export interface MealPreset {
   name: string;
   default_meal: Meal;
   food_id: string | null;
+  /** How many servings this recipe/meal yields - logging "1 serving"
+   * divides the combined ingredient totals by this count. */
+  servings_count: number;
   created_at: string;
 }
 
@@ -118,10 +137,14 @@ export interface Macros {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
 }
 
 /** Every macro on `foods` is per 100g/100ml; `gramsEquivalent` converts a
- * chosen serving (or a raw gram/ml amount) into that same 100-unit basis. */
+ * chosen serving (or a raw gram/ml amount) into that same 100-unit basis.
+ * Unknown fiber/sugar/sodium (null on the food) contribute 0 to sums. */
 export function macrosForServing(food: Food, gramsEquivalent: number, quantity: number): Macros {
   const factor = (quantity * gramsEquivalent) / 100;
   return {
@@ -129,6 +152,9 @@ export function macrosForServing(food: Food, gramsEquivalent: number, quantity: 
     protein_g: food.protein_g * factor,
     carbs_g: food.carbs_g * factor,
     fat_g: food.fat_g * factor,
+    fiber_g: (food.fiber_g ?? 0) * factor,
+    sugar_g: (food.sugar_g ?? 0) * factor,
+    sodium_mg: (food.sodium_mg ?? 0) * factor,
   };
 }
 
@@ -150,7 +176,10 @@ export function sumMacros(items: Macros[]): Macros {
       protein_g: acc.protein_g + m.protein_g,
       carbs_g: acc.carbs_g + m.carbs_g,
       fat_g: acc.fat_g + m.fat_g,
+      fiber_g: acc.fiber_g + m.fiber_g,
+      sugar_g: acc.sugar_g + m.sugar_g,
+      sodium_mg: acc.sodium_mg + m.sodium_mg,
     }),
-    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0, sodium_mg: 0 },
   );
 }

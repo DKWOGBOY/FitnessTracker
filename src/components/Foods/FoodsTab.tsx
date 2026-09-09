@@ -84,8 +84,16 @@ export default function FoodsTab() {
                   <div className="list-row-title">{f.name}</div>
                   <div className="list-row-sub">
                     <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
-                    {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g ·{" "}
-                    <span className="badge-muted badge">{f.source}</span>
+                    {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g
+                    {(f.fiber_g != null || f.sugar_g != null || f.sodium_mg != null) && (
+                      <>
+                        {" "}
+                        · {f.fiber_g != null && `Fiber ${Math.round(f.fiber_g)}g `}
+                        {f.sugar_g != null && `Sugar ${Math.round(f.sugar_g)}g `}
+                        {f.sodium_mg != null && `Sodium ${Math.round(f.sodium_mg)}mg`}
+                      </>
+                    )}{" "}
+                    · <span className="badge-muted badge">{f.source}</span>
                     {f.is_verified && (
                       <span className="badge" style={{ marginLeft: 4 }}>
                         Verified
@@ -175,8 +183,8 @@ export default function FoodsTab() {
           onClose={() => setShowMealBuilder(false)}
           onCreateFood={addFood}
           onFoodCreated={() => refreshFoods()}
-          onSave={async (name, defaultMeal, items) => {
-            await savePreset(name, defaultMeal, items);
+          onSave={async (name, defaultMeal, items, servingsCount) => {
+            await savePreset(name, defaultMeal, items, servingsCount);
             setShowMealBuilder(false);
           }}
         />
@@ -189,8 +197,8 @@ export default function FoodsTab() {
           onClose={() => setEditingPreset(null)}
           onCreateFood={addFood}
           onFoodCreated={() => refreshFoods()}
-          onUpdate={async (id, name, items) => {
-            await updatePreset(id, name, items);
+          onUpdate={async (id, name, items, servingsCount) => {
+            await updatePreset(id, name, items, servingsCount);
             setEditingPreset(null);
           }}
         />

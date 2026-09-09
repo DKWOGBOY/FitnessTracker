@@ -27,7 +27,7 @@ interface Props {
   presets: MealPresetWithItems[];
   onCreateFood: (input: FoodInput) => Promise<Food>;
   onFoodCreated: (food: Food) => void;
-  onUpdatePreset: (id: string, name: string, items: PresetItemInput[]) => Promise<void>;
+  onUpdatePreset: (id: string, name: string, items: PresetItemInput[], servingsCount: number) => Promise<void>;
   onMealEdited: () => void;
 }
 
