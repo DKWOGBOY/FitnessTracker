@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useFoods } from "../../hooks/useFoods";
 import { useFoodLogs } from "../../hooks/useFoodLogs";
 import { useTargets } from "../../hooks/useTargets";
@@ -10,6 +11,7 @@ import type { LogPageInitialData } from "../../hooks/useLogPageInitialData";
 import { MEALS, macrosForLog, sumMacros, type Meal } from "../../lib/types";
 import DateNav from "./DateNav";
 import DailySummary from "./DailySummary";
+import MacroGauges from "./MacroGauges";
 import MealSection from "./MealSection";
 import WeighInReminder from "./WeighInReminder";
 import WaterTracker from "./WaterTracker";
@@ -52,10 +54,8 @@ export default function LogTabContent({
   );
   const { litres, setLitres } = useWaterLog(date, initialData?.waterLitres);
   const { weighInReminderDays } = useUserSettings();
-  const { logs: exerciseLogs, deleteLog: deleteExerciseLog, upsertLiftEstimate } = useExerciseLogs(
-    date,
-    initialData?.exerciseLogs,
-  );
+  const { logs: exerciseLogs, upsertLiftEstimate } = useExerciseLogs(date, initialData?.exerciseLogs);
+  const [expandedMeal, setExpandedMeal] = useState<Meal | null>(null);
 
   const consumed = sumMacros(logs.map((l) => macrosForLog(l)));
   const target = targetForDate(date);
@@ -63,19 +63,26 @@ export default function LogTabContent({
 
   return (
     <div className="page-transition-in">
-      <DailySummary consumed={consumed} target={target} streak={streak} burned={burned} />
+      <DailySummary consumed={consumed} target={target} streak={streak} burned={burned} date={date} />
 
       <WeighInReminder onGoToTrends={onGoToTrends} remindAfterDays={weighInReminderDays} />
 
       <DateNav date={date} onChange={onDateChange} />
 
+      <MacroGauges consumed={consumed} target={target} />
+
       <WaterTracker target={waterTarget} litres={litres} setLitres={setLitres} />
 
+      <div className="section-title" style={{ marginTop: 22 }}>
+        Meals
+      </div>
       {MEALS.map((meal) => (
         <MealSection
           key={meal}
           meal={meal}
           logs={logs.filter((l) => l.meal === meal)}
+          isOpen={expandedMeal === meal}
+          onToggle={() => setExpandedMeal((cur) => (cur === meal ? null : meal))}
           onAddClick={() => onModalMealChange(meal)}
           onEditLog={(id, changes) => updateLog(id, changes)}
           onDelete={deleteLog}
@@ -89,8 +96,7 @@ export default function LogTabContent({
         />
       ))}
 
-      <div className="section-title">Exercise</div>
-      <ExerciseCard date={date} logs={exerciseLogs} onDelete={deleteExerciseLog} onUpsertLiftEstimate={upsertLiftEstimate} />
+      <ExerciseCard date={date} logs={exerciseLogs} onUpsertLiftEstimate={upsertLiftEstimate} />
 
       {modalMeal && (
         <FoodSearchModal

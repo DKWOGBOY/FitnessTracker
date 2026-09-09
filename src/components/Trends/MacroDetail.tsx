@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { Cell, Pie, PieChart } from "recharts";
 import { useLogAggregates } from "../../hooks/useLogAggregates";
 import { useTargets } from "../../hooks/useTargets";
 import { shiftDate, todayStr } from "../../lib/dates";
 import { IconArrowLeft } from "../icons";
+import ProgressRing from "../Log/ProgressRing";
 
 interface Props {
   onClose: () => void;
@@ -13,11 +13,12 @@ type Range = "day" | "week" | "month";
 
 const RANGE_DAYS: Record<Range, number> = { day: 1, week: 7, month: 30 };
 const RANGE_LABELS: Record<Range, string> = { day: "Day", week: "Week", month: "Month" };
+const PERIOD_LABELS: Record<Range, string> = { day: "Today", week: "Last 7 days", month: "Last 30 days" };
 
 const MACROS_CONFIG = [
+  { key: "protein_g" as const, label: "Protein", color: "var(--color-protein)", kcalPerGram: 4 },
   { key: "carbs_g" as const, label: "Carbs", color: "var(--color-carbs)", kcalPerGram: 4 },
   { key: "fat_g" as const, label: "Fat", color: "var(--color-fat)", kcalPerGram: 9 },
-  { key: "protein_g" as const, label: "Protein", color: "var(--color-protein)", kcalPerGram: 4 },
 ];
 
 const EXTENDED_NUTRIENTS_CONFIG = [
@@ -28,6 +29,7 @@ const EXTENDED_NUTRIENTS_CONFIG = [
 
 export default function MacroDetail({ onClose }: Props) {
   const [range, setRange] = useState<Range>("day");
+  const [selected, setSelected] = useState<string | null>(null);
   const days = RANGE_DAYS[range];
 
   const { fromDate, toDate } = useMemo(() => {
@@ -38,8 +40,16 @@ export default function MacroDetail({ onClose }: Props) {
   const { targetForDate } = useTargets();
   const target = targetForDate(todayStr());
 
-  const pieData = MACROS_CONFIG.map((m) => ({ ...m, kcal: totals[m.key] * m.kcalPerGram }));
-  const pieTotal = pieData.reduce((sum, d) => sum + d.kcal, 0);
+  const rows = MACROS_CONFIG.map((m) => {
+    const g = totals[m.key];
+    const goal = (target?.[m.key] ?? 0) * days;
+    return { ...m, g, goal, kcal: g * m.kcalPerGram };
+  });
+  const kcalTotal = rows.reduce((sum, r) => sum + r.kcal, 0);
+
+  function toggle(key: string) {
+    setSelected((cur) => (cur === key ? null : key));
+  }
 
   return (
     <div className="screen-overlay">
@@ -51,7 +61,7 @@ export default function MacroDetail({ onClose }: Props) {
       </div>
 
       <div className="screen-body">
-        <div className="range-toggle" style={{ marginBottom: 16 }}>
+        <div className="range-toggle range-toggle-block" style={{ marginBottom: 24 }}>
           {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (
             <button key={r} className={r === range ? "active" : ""} onClick={() => setRange(r)}>
               {RANGE_LABELS[r]}
@@ -63,73 +73,86 @@ export default function MacroDetail({ onClose }: Props) {
           <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
             <div className="spinner" />
           </div>
-        ) : pieTotal <= 0 ? (
-          <p className="empty-state">No food logged in this period.</p>
         ) : (
           <>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <PieChart width={220} height={220}>
-                <Pie
-                  data={pieData}
-                  dataKey="kcal"
-                  nameKey="label"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  stroke="none"
-                  isAnimationActive
-                  animationDuration={450}
-                  animationEasing="ease-out"
-                  label={({ value }) =>
-                    typeof value === "number" && value > 0 ? `${Math.round((value / pieTotal) * 100)}%` : ""
-                  }
-                  labelLine={false}
-                >
-                  {pieData.map((d) => (
-                    <Cell key={d.key} fill={d.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </div>
-            <div className="macro-legend-grid" style={{ marginTop: 8, marginBottom: 20 }}>
-              {pieData.map((d) => (
-                <div className="macro-legend-item" key={d.key}>
-                  <span className="macro-legend-dot" style={{ background: d.color }} />
-                  <div>
-                    <div className="list-row-title">{d.label}</div>
-                    <div className="list-row-sub">
-                      {pieTotal > 0 ? Math.round((d.kcal / pieTotal) * 100) : 0}% ({Math.round(totals[d.key])}g)
+            <div className="macro-ring-row">
+              {rows.map((r) => {
+                const pct = r.goal > 0 ? (r.g / r.goal) * 100 : 0;
+                const dim = selected !== null && selected !== r.key;
+                return (
+                  <div
+                    className="macro-ring"
+                    key={r.key}
+                    style={{ cursor: "pointer", opacity: dim ? 0.35 : 1, transition: "opacity 0.2s ease" }}
+                    onClick={() => toggle(r.key)}
+                  >
+                    <div className="ring-wrap" style={{ width: 88, height: 88 }}>
+                      <ProgressRing pct={pct} color={r.color} trackColor="var(--color-bg-alt)" size={88} thickness={9} />
+                      <div className="ring-center">
+                        <span style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em" }}>
+                          {Math.round(pct)}%
+                        </span>
+                      </div>
                     </div>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{r.label}</span>
+                    <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>of goal</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {kcalTotal <= 0 ? (
+              <p className="empty-state">No food logged in this period.</p>
+            ) : (
+              <div className="card plate-card">
+                <div className="plate-card-head">
+                  <span className="plate-kicker">On the plate · {PERIOD_LABELS[range]}</span>
+                  <span className="plate-kcal">{Math.round(kcalTotal).toLocaleString()} kcal</span>
+                </div>
+
+                <div className="plate-split">
+                  {rows.map((r) => {
+                    const share = kcalTotal > 0 ? (r.kcal / kcalTotal) * 100 : 0;
+                    const dim = selected !== null && selected !== r.key;
+                    return (
+                      <div
+                        className="plate-split-seg"
+                        key={r.key}
+                        style={{ width: `${share}%`, background: r.color, opacity: dim ? 0.35 : 1 }}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div>
+                  {rows.map((r) => {
+                    const share = kcalTotal > 0 ? Math.round((r.kcal / kcalTotal) * 100) : 0;
+                    const dim = selected !== null && selected !== r.key;
+                    return (
+                      <button
+                        type="button"
+                        className="ledger-row"
+                        key={r.key}
+                        style={{ opacity: dim ? 0.4 : 1 }}
+                        onClick={() => toggle(r.key)}
+                      >
+                        <span className="ledger-dot" style={{ background: r.color }} />
+                        <span className="ledger-name">{r.label}</span>
+                        <span className="ledger-share">{share}% of kcal</span>
+                        <span className="ledger-val">
+                          {Math.round(r.g)} / {Math.round(r.goal)} g
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
 
-        {MACROS_CONFIG.map(({ key, label, color }) => {
-          const goal = (target?.[key] ?? 0) * days;
-          const goalPct = goal > 0 ? Math.round((totals[key] / goal) * 100) : null;
-          return (
-            <div className="card" style={{ marginBottom: 12 }} key={key}>
-              <div className="list-row">
-                <span style={{ color, fontWeight: 700 }}>{label}</span>
-                <strong>{Math.round(totals[key])} g</strong>
-              </div>
-              <div className="list-row">
-                <span>%</span>
-                <strong>{goalPct === null ? "—" : `${goalPct}%`}</strong>
-              </div>
-              <div className="list-row">
-                <span>Goal</span>
-                <strong>{Math.round(goal)} g</strong>
-              </div>
-            </div>
-          );
-        })}
-
-        {!loading && pieTotal > 0 && (
-          <div className="card" style={{ marginBottom: 12 }}>
+        {!loading && kcalTotal > 0 && (
+          <div className="card" style={{ marginTop: 12 }}>
             <div className="section-title" style={{ marginTop: 0 }}>
               Extended nutrients
             </div>

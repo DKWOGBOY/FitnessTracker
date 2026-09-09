@@ -2,47 +2,17 @@ import type { Macros, Target } from "../../lib/types";
 import { IconFlame } from "../icons";
 import { useEnergyUnit } from "../../context/EnergyUnitContext";
 import { energyUnitLabel, formatEnergy } from "../../lib/energy";
-import ProgressRing from "./ProgressRing";
+import { formatDateLabel } from "../../lib/dates";
 
 interface Props {
   consumed: Macros;
   target: Target | null;
   streak: number;
   burned: number;
+  date: string;
 }
 
-const RING_TRACK = "rgba(255, 255, 255, 0.28)";
-
-function MacroRing({
-  label,
-  consumed,
-  target,
-  unit,
-}: {
-  label: string;
-  consumed: number;
-  target: number | null;
-  unit: string;
-}) {
-  const pct = target ? (consumed / target) * 100 : 0;
-  return (
-    <div className="macro-ring">
-      <div className="ring-wrap" style={{ width: 72, height: 72 }}>
-        <ProgressRing pct={pct} color="#fff" trackColor={RING_TRACK} size={72} thickness={7} />
-        <div className="ring-center">
-          <span className="summary-hero-macro-value">
-            {Math.round(consumed)}
-            {unit}
-          </span>
-        </div>
-      </div>
-      <span className="summary-hero-macro-label">{label}</span>
-      <span className="summary-hero-macro-target">{target !== null ? `/${Math.round(target)}${unit}` : "no target"}</span>
-    </div>
-  );
-}
-
-export default function DailySummary({ consumed, target, streak, burned }: Props) {
+export default function DailySummary({ consumed, target, streak, burned, date }: Props) {
   const { energyUnit } = useEnergyUnit();
   const unitLabel = energyUnitLabel(energyUnit);
   const calorieTarget = target?.calories ?? null;
@@ -50,43 +20,50 @@ export default function DailySummary({ consumed, target, streak, burned }: Props
   const remaining = calorieTarget !== null ? calorieTarget - calorieConsumed + burned : null;
   const pct = calorieTarget ? (calorieConsumed / calorieTarget) * 100 : 0;
 
-  return (
-    <div className="summary-hero">
-      {/* Always rendered (space reserved) so the streak fetch resolving a
-          moment after the rest of the page doesn't pop this in and shove
-          the ring down - it just fades in instead. */}
-      <span className="summary-hero-streak" style={{ opacity: streak > 0 ? 1 : 0 }}>
-        <IconFlame className="icon" />
-        {streak} day{streak === 1 ? "" : "s"} streak
-      </span>
+  const over = remaining !== null && remaining < 0;
+  const bigValue = calorieTarget === null ? calorieConsumed : over ? Math.abs(remaining!) : remaining!;
+  const bigUnit = calorieTarget === null ? `${unitLabel} eaten` : over ? `${unitLabel} over` : `${unitLabel} left`;
 
-      <div className="ring-wrap" style={{ width: 152, height: 152 }}>
-        <ProgressRing pct={pct} color="#fff" trackColor={RING_TRACK} size={152} thickness={13} />
-        <div className="ring-center">
-          <span className="summary-hero-value">{formatEnergy(calorieConsumed, energyUnit)}</span>
-          <span className="summary-hero-unit">{unitLabel} eaten</span>
+  return (
+    <>
+      <div className="summary-hero">
+        <div className="summary-hero-top">
+          <span className="summary-hero-date">{formatDateLabel(date)}</span>
+          <span className="summary-hero-streak" style={{ opacity: streak > 0 ? 1 : 0 }}>
+            <IconFlame className="icon" />
+            {streak} day{streak === 1 ? "" : "s"} streak
+          </span>
+        </div>
+
+        <div className="summary-hero-bignum">
+          <span className="summary-hero-value">{formatEnergy(bigValue, energyUnit)}</span>
+          <span className="summary-hero-unit">{bigUnit}</span>
+        </div>
+
+        <div className="summary-hero-track">
+          <div className="summary-hero-track-fill" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
         </div>
       </div>
 
-      <div className="summary-hero-caption">
-        {calorieTarget !== null
-          ? remaining !== null && remaining < 0
-            ? `${formatEnergy(Math.abs(remaining), energyUnit)} ${unitLabel} over your ${formatEnergy(calorieTarget, energyUnit)} target`
-            : `${formatEnergy(remaining ?? 0, energyUnit)} ${unitLabel} left of ${formatEnergy(calorieTarget, energyUnit)}`
-          : "No target set — head to Settings"}
+      <div className="diary-maths">
+        <div>
+          <b>{formatEnergy(calorieConsumed, energyUnit)}</b> eaten
+        </div>
         {burned > 0 && (
-          <>
-            {" "}
-            · {formatEnergy(burned, energyUnit)} {unitLabel} burned
-          </>
+          <div>
+            +<b>{formatEnergy(burned, energyUnit)}</b> training
+          </div>
         )}
+        <div>
+          {calorieTarget !== null ? (
+            <>
+              <b>{formatEnergy(calorieTarget, energyUnit)}</b> goal
+            </>
+          ) : (
+            "no target set"
+          )}
+        </div>
       </div>
-
-      <div className="macro-ring-row">
-        <MacroRing label="Protein" consumed={consumed.protein_g} target={target?.protein_g ?? null} unit="g" />
-        <MacroRing label="Carbs" consumed={consumed.carbs_g} target={target?.carbs_g ?? null} unit="g" />
-        <MacroRing label="Fat" consumed={consumed.fat_g} target={target?.fat_g ?? null} unit="g" />
-      </div>
-    </div>
+    </>
   );
 }

@@ -358,14 +358,22 @@ textarea:focus {
 .summary-hero {
   background: linear-gradient(160deg, var(--color-primary), var(--color-primary-hover));
   color: #fff8f2;
-  margin: 0 -16px 20px;
-  padding: calc(20px + env(safe-area-inset-top)) 20px 28px;
+  margin: 0 -16px 0;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 22px;
+}
+
+.summary-hero-top {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
-  border-bottom-left-radius: 50% 26px;
-  border-bottom-right-radius: 50% 26px;
+  justify-content: space-between;
+}
+
+.summary-hero-date {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #fff8f2;
 }
 
 .summary-hero-streak {
@@ -375,61 +383,45 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.18);
   padding: 4px 12px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  margin-bottom: 16px;
   transition: opacity 0.25s ease;
 }
 
+.summary-hero-bignum {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 .summary-hero-value {
-  font-size: 34px;
-  font-weight: 800;
+  font-size: 46px;
+  font-weight: 200;
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
 .summary-hero-unit {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
-  margin-top: 4px;
-}
-
-.summary-hero-caption {
+  padding-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
   opacity: 0.92;
-  margin-top: 12px;
 }
 
-.summary-hero .macro-ring-row {
-  width: 100%;
-  margin-top: 22px;
+.summary-hero-track {
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+  margin-top: 16px;
 }
 
-.summary-hero-macro-value {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.summary-hero-macro-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.9;
-}
-
-.summary-hero-macro-target {
-  display: block;
-  font-size: 10px;
-  font-weight: 600;
-  opacity: 0.75;
-  margin-top: 1px;
+.summary-hero-track-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #fff8f2;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .meal-totals-card {
@@ -1441,4 +1433,219 @@ textarea:focus {
   background: var(--color-surface);
   color: var(--color-primary);
   box-shadow: var(--shadow-card);
+}
+
+.range-toggle-block {
+  display: flex;
+  width: 100%;
+}
+
+.range-toggle-block button {
+  flex: 1;
+  text-align: center;
+}
+
+/* Diary home (Log tab) ---------------------------------------------------- */
+
+.diary-maths {
+  display: flex;
+  gap: 18px;
+  margin: 0 -16px 20px;
+  padding: 14px 16px;
+  background: var(--color-surface-alt);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.diary-maths b {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.meal-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.meal-card + .meal-card {
+  margin-top: 10px;
+}
+
+.meal-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.meal-card-name {
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.meal-card-macro {
+  margin-top: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.meal-card-kcal {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.meal-card-add {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.meal-card-items {
+  padding: 0 16px 8px;
+}
+
+.training-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+}
+
+.training-bar-sub {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.training-bar-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+  white-space: nowrap;
+}
+
+.water-pips {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+
+.water-pip {
+  flex: 1;
+  height: 9px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  background: var(--color-bg-alt);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.water-pip.filled {
+  background: var(--color-water);
+}
+
+/* Trends detail screens (Macros / Calories) - dial gauges + "on the plate"
+   split-bar card, replacing the old pie-chart legend layout. */
+
+.plate-card {
+  margin-top: 24px;
+}
+
+.plate-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.plate-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-primary-hover);
+}
+
+.plate-kcal {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.plate-split {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  margin-top: 16px;
+}
+
+.plate-split-seg {
+  border-radius: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.ledger-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ledger-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ledger-share {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.ledger-val {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
 }
