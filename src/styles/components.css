@@ -1479,7 +1479,6 @@ textarea:focus {
   align-items: center;
   gap: 12px;
   padding: 15px 16px;
-  cursor: pointer;
   background: none;
   border: none;
   width: 100%;
@@ -1523,13 +1522,22 @@ textarea:focus {
   padding: 0 16px 8px;
 }
 
+.training-card {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
 .training-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 15px 16px;
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.training-items {
+  padding: 0 16px 12px;
 }
 
 .training-bar-sub {

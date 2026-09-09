@@ -19,8 +19,6 @@ import type { PresetItemInput } from "../../hooks/useMealPresets";
 interface Props {
   meal: Meal;
   logs: FoodLogWithFood[];
-  isOpen: boolean;
-  onToggle: () => void;
   onAddClick: () => void;
   onEditLog: (id: string, changes: { quantity: number; serving_id: string | null; created_at: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -43,8 +41,6 @@ const MEAL_LABELS: Record<Meal, string> = {
 export default function MealSection({
   meal,
   logs,
-  isOpen,
-  onToggle,
   onAddClick,
   onEditLog,
   onDelete,
@@ -62,19 +58,13 @@ export default function MealSection({
 
   return (
     <div className="meal-card">
-      <div
-        className="meal-card-head"
-        role="button"
-        tabIndex={0}
-        aria-expanded={isOpen}
-        onClick={onToggle}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle()}
-      >
+      <div className="meal-card-head">
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="meal-card-name">{MEAL_LABELS[meal]}</div>
           {logs.length > 0 && (
             <div className="meal-card-macro">
-              C {Math.round(totals.carbs_g)}g · F {Math.round(totals.fat_g)}g · P {Math.round(totals.protein_g)}g
+              <b>C</b> {Math.round(totals.carbs_g)}g · <b>F</b> {Math.round(totals.fat_g)}g · <b>P</b>{" "}
+              {Math.round(totals.protein_g)}g
             </div>
           )}
         </div>
@@ -100,7 +90,7 @@ export default function MealSection({
         </button>
       </div>
 
-      {isOpen && logs.length > 0 && (
+      {logs.length > 0 && (
         <div className="meal-card-items">
           {logs.map((log) => {
             const m = macrosForLog(log);

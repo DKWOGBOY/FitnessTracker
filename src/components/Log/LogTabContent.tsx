@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useFoods } from "../../hooks/useFoods";
 import { useFoodLogs } from "../../hooks/useFoodLogs";
 import { useTargets } from "../../hooks/useTargets";
@@ -55,7 +54,6 @@ export default function LogTabContent({
   const { litres, setLitres } = useWaterLog(date, initialData?.waterLitres);
   const { weighInReminderDays } = useUserSettings();
   const { logs: exerciseLogs, upsertLiftEstimate } = useExerciseLogs(date, initialData?.exerciseLogs);
-  const [expandedMeal, setExpandedMeal] = useState<Meal | null>(null);
 
   const consumed = sumMacros(logs.map((l) => macrosForLog(l)));
   const target = targetForDate(date);
@@ -73,16 +71,11 @@ export default function LogTabContent({
 
       <WaterTracker target={waterTarget} litres={litres} setLitres={setLitres} />
 
-      <div className="section-title" style={{ marginTop: 22 }}>
-        Meals
-      </div>
       {MEALS.map((meal) => (
         <MealSection
           key={meal}
           meal={meal}
           logs={logs.filter((l) => l.meal === meal)}
-          isOpen={expandedMeal === meal}
-          onToggle={() => setExpandedMeal((cur) => (cur === meal ? null : meal))}
           onAddClick={() => onModalMealChange(meal)}
           onEditLog={(id, changes) => updateLog(id, changes)}
           onDelete={deleteLog}
