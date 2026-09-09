@@ -20,10 +20,13 @@ export default async (req: Request) => {
   let targetUrl: string;
   if (endpoint === "suggest") {
     const q = url.searchParams.get("q") ?? "";
-    targetUrl = `${CALORIEAPI_BASE}/search/suggest?q=${encodeURIComponent(q)}&limit=15`;
+    targetUrl = `${CALORIEAPI_BASE}/search/suggest?q=${encodeURIComponent(q)}&limit=20`;
   } else if (endpoint === "food") {
     const id = url.searchParams.get("id") ?? "";
     targetUrl = `${CALORIEAPI_BASE}/foods/${encodeURIComponent(id)}`;
+  } else if (endpoint === "barcode") {
+    const upc = (url.searchParams.get("upc") ?? "").replace(/\D/g, "");
+    targetUrl = `${CALORIEAPI_BASE}/search/barcode/${encodeURIComponent(upc)}`;
   } else {
     return new Response(JSON.stringify({ error: "Unknown endpoint." }), {
       status: 400,

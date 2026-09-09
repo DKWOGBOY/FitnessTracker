@@ -3,12 +3,14 @@ import { supabase } from "../../lib/supabase";
 import {
   brandLabel,
   findExistingMatch,
+  getFoodByBarcode,
   getFoodDetails,
   isVerifiedSuggestion,
   suggestFoods,
   type FoodSuggestion,
   type NormalizedFoodCandidate,
 } from "../../lib/foodApi";
+import BarcodeScanner from "./BarcodeScanner";
 import { useFoodLogHistory, type FoodHistoryEntry } from "../../hooks/useFoodLogHistory";
 import type { PresetItemInput } from "../../hooks/useMealPresets";
 import {
@@ -24,7 +26,16 @@ import {
   type Meal,
   type MealPresetWithItems,
 } from "../../lib/types";
-import { IconArrowLeft, IconCheck, IconChevronDown, IconClose, IconPlus, IconSearch, IconStar } from "../icons";
+import {
+  IconArrowLeft,
+  IconBarcode,
+  IconCheck,
+  IconChevronDown,
+  IconClose,
+  IconPlus,
+  IconSearch,
+  IconStar,
+} from "../icons";
 import Energy from "../Energy";
 import MealBuilder from "../Foods/MealBuilder";
 
@@ -99,6 +110,9 @@ export default function FoodSearchModal({
   const [detailServingId, setDetailServingId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("1");
   const [saving, setSaving] = useState(false);
+
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const q = query.trim().toLowerCase();
 
@@ -205,6 +219,31 @@ export default function FoodSearchModal({
       setApiError(err instanceof Error ? err.message : "Couldn't load that food.");
     } finally {
       setFetchingSuggestionId(null);
+    }
+  }
+
+  async function handleBarcodeDetected(code: string) {
+    setScannerOpen(false);
+    setTab("search");
+    setApiError(null);
+    setScanning(true);
+    try {
+      const candidate = await getFoodByBarcode(code);
+      if (!candidate) {
+        setApiError(`No product found for barcode ${code} - try searching by name instead.`);
+        return;
+      }
+      const match = await findExistingMatch(candidate);
+      if (match) {
+        setPendingCandidate(candidate);
+        setPendingMatch(match);
+      } else {
+        await createFoodFromCandidate(candidate);
+      }
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Couldn't look up that barcode.");
+    } finally {
+      setScanning(false);
     }
   }
 
@@ -386,10 +425,18 @@ export default function FoodSearchModal({
 
         {tab === "search" && (
           <div>
-            {q.length < 2 ? (
-              <p className="text-muted" style={{ fontSize: 13 }}>
-                Keep typing above (at least 2 characters) to search.
+            {apiError && (
+              <p className="error-text" style={{ marginBottom: 12 }}>
+                {apiError}
               </p>
+            )}
+
+            {q.length < 2 ? (
+              !apiError && (
+                <p className="text-muted" style={{ fontSize: 13 }}>
+                  Keep typing above (at least 2 characters) to search.
+                </p>
+              )
             ) : (
               <>
                 {apiLoading && (
@@ -397,7 +444,6 @@ export default function FoodSearchModal({
                     <div className="spinner" />
                   </div>
                 )}
-                {apiError && <p className="error-text">{apiError}</p>}
                 {!apiLoading && !apiError && suggestions.length === 0 && (
                   <p className="text-muted" style={{ fontSize: 13 }}>
                     No results for "{query.trim()}".
@@ -439,6 +485,15 @@ export default function FoodSearchModal({
           </div>
         )}
       </div>
+
+      <button
+        className="barcode-fab"
+        onClick={() => setScannerOpen(true)}
+        disabled={scanning}
+        aria-label="Scan barcode"
+      >
+        {scanning ? <div className="spinner" /> : <IconBarcode className="icon" />}
+      </button>
 
       {pendingCandidate && pendingMatch && (
         <div
@@ -557,6 +612,10 @@ export default function FoodSearchModal({
             setShowMealBuilder(false);
           }}
         />
+      )}
+
+      {scannerOpen && (
+        <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setScannerOpen(false)} />
       )}
     </div>
   );

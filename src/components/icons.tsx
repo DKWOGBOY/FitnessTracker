@@ -174,6 +174,14 @@ export function IconUser({ className }: IconProps) {
   );
 }
 
+export function IconBarcode({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M4 5v14M8 5v14M11 5v14M13 5v14M16 5v14M20 5v14" />
+    </svg>
+  );
+}
+
 export function IconArrowLeft({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">

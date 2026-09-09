@@ -106,12 +106,14 @@ supabase/
 
 ## Notes on the food API layer
 
-The Log tab's "Search Online" tab uses a single provider, CalorieAPI (see
-`calorieapi-integration-spec.md`): typing debounces into a cheap typeahead `suggest` call, and only
-picking a result fetches the full nutrition/portion payload. Every call goes through
-`netlify/functions/calorieapi.mts`, not straight to CalorieAPI, since its API doesn't send CORS
-headers a browser needs to call it directly. Anything picked is normalized to per-100g macros plus
-its real household portions, checked for an existing near-duplicate in your database, and only
-then written to `foods`/`food_servings` — so it's fetched and normalized once, never again. Foods
-already imported from the previous Open Food Facts/USDA integration keep their old `source` value;
+The Log tab's "Search Online" tab uses a single provider, CalorieAPI (calorieapi.com): typing
+debounces into a cheap typeahead `suggest` call, and only picking a result fetches the full
+nutrition/portion payload. It also supports scanning a barcode directly (`@zxing/browser` decodes
+the camera feed client-side; the UPC is looked up via CalorieAPI, falling back to Open Food Facts
+on its end). Every call goes through `netlify/functions/calorieapi.mts`, not straight to
+CalorieAPI, since its API doesn't send CORS headers a browser needs to call it directly. Anything
+picked (search or barcode) is normalized to per-100g macros plus its real household portions,
+checked for an existing near-duplicate in your database, and only then written to
+`foods`/`food_servings` — so it's fetched and normalized once, never again. Foods already imported
+from the previous Open Food Facts/USDA integration keep their old `source` value;
 nothing migrates or re-fetches them.

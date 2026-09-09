@@ -64,11 +64,27 @@ async function calorieApiFetch(query: string): Promise<any> {
   }
 }
 
+/** CalorieAPI has no language/locale filter param, so this is a client-side
+ * heuristic instead: true if more than ~30% of a name's characters fall
+ * outside basic Latin (ASCII + accented European letters + common
+ * punctuation) - catches CJK/Cyrillic/Arabic/etc. entries without
+ * penalizing normal accented names like "jalapeño" or "crème brûlée". */
+function looksNonEnglish(name: string): boolean {
+  const foreign = name.match(/[^\x20-\x7EÀ-ɏ‐-―‘-‟·]/gu) ?? [];
+  return foreign.length / Math.max(name.trim().length, 1) > 0.3;
+}
+
+const SUGGEST_FETCH_LIMIT = 20; // CalorieAPI's max for /search/suggest
+const SUGGEST_DISPLAY_LIMIT = 8; // trimmed further client-side for a tidier list
+
 /** Lightweight typeahead - cheap on quota, used purely to render a dropdown
- * of candidates before the user picks one. */
+ * of candidates before the user picks one. Fetches CalorieAPI's max batch
+ * so filtering out foreign-language names still leaves a full-looking
+ * list, then trims to a shorter display count. */
 export async function suggestFoods(query: string): Promise<FoodSuggestion[]> {
-  const data = await calorieApiFetch(`endpoint=suggest&q=${encodeURIComponent(query)}`);
-  return (data ?? []) as FoodSuggestion[];
+  const data = await calorieApiFetch(`endpoint=suggest&q=${encodeURIComponent(query)}&limit=${SUGGEST_FETCH_LIMIT}`);
+  const results = (data ?? []) as FoodSuggestion[];
+  return results.filter((s) => !looksNonEnglish(s.name)).slice(0, SUGGEST_DISPLAY_LIMIT);
 }
 
 interface CalorieApiPortion {
@@ -114,6 +130,47 @@ export async function getFoodDetails(id: number): Promise<NormalizedFoodCandidat
     is_verified: f.is_verified,
     source: "calorieapi",
     source_id: String(f.id),
+    extraServings,
+  };
+}
+
+interface CalorieApiBarcodeResult {
+  barcode: string;
+  product: { name: string; brand?: string | null };
+  serving?: { label: string; quantity: number; unit: string } | null;
+  nutrition_per_100g: {
+    energy_kcal: number;
+    protein_g: number;
+    carbohydrates_g: number;
+    fat_g: number;
+  };
+}
+
+/** Looks up a scanned UPC/EAN. Returns null on no match (404) - caller
+ * should fall back to manual search rather than dead-ending, per the
+ * barcode-scan flow this mirrors from the CalorieAPI integration spec. */
+export async function getFoodByBarcode(upc: string): Promise<NormalizedFoodCandidate | null> {
+  const digits = upc.replace(/\D/g, "");
+  const r = (await calorieApiFetch(`endpoint=barcode&upc=${encodeURIComponent(digits)}`)) as CalorieApiBarcodeResult | null;
+  if (!r) return null;
+
+  const baseUnit = r.serving?.unit === "ml" ? "ml" : "g";
+  const extraServings =
+    r.serving && r.serving.quantity > 0
+      ? [{ label: r.serving.label, grams_equivalent: r.serving.quantity, is_default: true }]
+      : [];
+
+  return {
+    name: r.product.brand ? `${r.product.name} (${r.product.brand})` : r.product.name,
+    calories: r.nutrition_per_100g.energy_kcal,
+    protein_g: r.nutrition_per_100g.protein_g,
+    carbs_g: r.nutrition_per_100g.carbohydrates_g,
+    fat_g: r.nutrition_per_100g.fat_g,
+    base_unit: baseUnit,
+    is_frequent: false,
+    is_verified: false,
+    source: "calorieapi",
+    source_id: `barcode:${r.barcode}`,
     extraServings,
   };
 }
