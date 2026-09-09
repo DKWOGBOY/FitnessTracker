@@ -356,7 +356,17 @@ textarea:focus {
 }
 
 .summary-hero {
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-hover));
+  /* Two layers: a flat strip pinned to exactly env(safe-area-inset-top) so
+     it matches .status-bar-fill / the iOS status bar with no visible seam,
+     then the diagonal gradient underneath for the rest of the band. */
+  background:
+    linear-gradient(
+      to bottom,
+      var(--color-primary) 0,
+      var(--color-primary) env(safe-area-inset-top),
+      transparent env(safe-area-inset-top)
+    ),
+    linear-gradient(160deg, var(--color-primary), var(--color-primary-hover));
   color: #fff8f2;
   margin: 0 -16px 0;
   padding: calc(20px + env(safe-area-inset-top)) 20px 22px;
