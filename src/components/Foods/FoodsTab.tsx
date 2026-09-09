@@ -84,7 +84,7 @@ export default function FoodsTab() {
                 <div className="list-row">
                   <div className="list-row-main">
                     <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                      <span className="list-row-title" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="list-row-title" style={{ flexShrink: 1, minWidth: 0 }}>
                         {f.name}
                       </span>
                       {f.is_verified && (
