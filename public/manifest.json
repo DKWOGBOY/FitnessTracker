@@ -1,6 +1,6 @@
 {
-  "name": "biteTrack",
-  "short_name": "biteTrack",
+  "name": "KOUR",
+  "short_name": "KOUR",
   "description": "Personal food and weight tracker",
   "start_url": "/",
   "display": "standalone",
@@ -8,9 +8,14 @@
   "theme_color": "#C1602E",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }

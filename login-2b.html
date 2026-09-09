@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>KOUR — Login (design reference 2b)</title>
+<style>
+  html,body{margin:0;height:100%}
+  body{background:#F5EFE6;color:#2E2420;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#C1602E}a:hover{color:#AE5426}
+</style>
+</head>
+<body>
+<div id="screen" style="min-height:100%;display:flex;flex-direction:column">
+
+  <!-- HEADER: terracotta field, K bleeds off the left edge at 16% cream -->
+  <header style="position:relative;height:340px;flex:none;background:#C1602E;overflow:hidden">
+    <div aria-hidden="true" style="position:absolute;left:-26px;bottom:-96px;font:800 340px/1 -apple-system,system-ui,sans-serif;letter-spacing:-18px;color:#F5EFE6;opacity:.16">K</div>
+    <div style="position:absolute;left:30px;bottom:34px;font:800 40px/1 -apple-system,system-ui,sans-serif;letter-spacing:-2px;color:#F9F1E6">KOUR</div>
+    <div style="position:absolute;left:30px;bottom:16px;font:500 11px/1 -apple-system,system-ui,sans-serif;letter-spacing:2.2px;text-transform:uppercase;color:rgba(249,241,230,.7)">Calories · macros · weight</div>
+  </header>
+
+  <main style="flex:1;padding:32px 30px 0;display:flex;flex-direction:column">
+    <form id="form" style="display:contents">
+      <div id="fields" style="display:flex;flex-direction:column;gap:12px">
+        <input id="email" type="email" autocomplete="username" placeholder="Email" />
+        <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
+      </div>
+      <div style="height:22px"></div>
+      <button id="submit" type="submit">Continue</button>
+      <div style="height:16px"></div>
+      <a id="forgot" href="#" style="text-align:center;font:400 14px/1 -apple-system,system-ui,sans-serif;color:#5A4A42;text-decoration:none">Forgot password</a>
+    </form>
+
+    <!-- signed-in state (hidden until auth resolves) -->
+    <div id="done" hidden>
+      <div style="font:600 24px/1.3 -apple-system,system-ui,sans-serif;letter-spacing:-.5px;color:#2E2420">Kitchen's open, Dillon.</div>
+      <div style="height:20px"></div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1;height:92px;border-radius:14px;background:#EFE4D6;padding:14px">
+          <div style="font:600 11px/1 -apple-system,system-ui,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#8A5A2E">Left</div>
+          <div style="margin-top:12px;font:700 26px/1 -apple-system,system-ui,sans-serif">1780</div>
+        </div>
+        <div style="flex:1;height:92px;border-radius:14px;background:#EFE4D6;padding:14px">
+          <div style="font:600 11px/1 -apple-system,system-ui,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#8A5A2E">Protein</div>
+          <div style="margin-top:12px;font:700 26px/1 -apple-system,system-ui,sans-serif">62g</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<style>
+  #fields input{height:54px;border:1.5px solid rgba(46,36,32,.12);border-radius:14px;background:#FBF7F0;padding:0 16px;font:400 17px/1 -apple-system,system-ui,sans-serif;color:#2E2420;outline:none;caret-color:#C1602E;transition:border-color .15s ease,background .15s ease}
+  #fields input::placeholder{color:rgba(46,36,32,.42)}
+  #fields input:focus{border-color:#C1602E;background:#fff}
+  #fields input[aria-invalid="true"]{border-color:#A33A22}
+  #submit{border:none;width:100%;height:56px;border-radius:14px;background:#2E2420;color:#F5EFE6;font:600 17px/1 -apple-system,system-ui,sans-serif;cursor:pointer;transition:transform .12s ease,background .2s ease}
+  #submit:hover{background:#3D3029}
+  #submit:active{transform:scale(.985)}
+  #submit[disabled]{opacity:.6;cursor:default;transform:none}
+  #error{margin-top:12px;font:400 13px/1.4 -apple-system,system-ui,sans-serif;color:#A33A22}
+</style>
+
+<script>
+  // Reference behaviour only — swap for Supabase signInWithPassword in the app.
+  const form = document.getElementById('form');
+  const btn = document.getElementById('submit');
+  const email = document.getElementById('email');
+  const pw = document.getElementById('password');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const ok = /\S+@\S+\.\S+/.test(email.value) && pw.value.length >= 6;
+    email.setAttribute('aria-invalid', String(!/\S+@\S+\.\S+/.test(email.value)));
+    if (!ok) { show('Check your email and password.'); return; }
+    show('');
+    btn.disabled = true; btn.textContent = 'One moment…';
+    setTimeout(() => {
+      form.hidden = true; form.style.display = 'none';
+      document.getElementById('done').hidden = false;
+    }, 1000);
+  });
+  function show(msg) {
+    let el = document.getElementById('error');
+    if (!el) { el = document.createElement('div'); el.id = 'error'; form.appendChild(el); }
+    el.textContent = msg;
+  }
+</script>
+</body>
+</html>

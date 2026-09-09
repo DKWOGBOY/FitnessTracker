@@ -113,16 +113,6 @@ a {
   padding-top: calc(20px + env(safe-area-inset-top));
 }
 
-.brand {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.brand span {
-  color: var(--color-primary);
-}
-
 .bottom-bar {
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom));

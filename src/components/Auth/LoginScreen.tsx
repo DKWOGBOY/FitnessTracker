@@ -37,73 +37,92 @@ export default function LoginScreen() {
     }
   }
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
-    >
-      <div className="card" style={{ width: "100%", maxWidth: 380 }}>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div className="brand">
-            bite<span>track</span>
-          </div>
-          <p className="text-muted" style={{ marginTop: 6, fontSize: 13 }}>
-            Sign in to log your food and weight.
-          </p>
-        </div>
+  async function handleForgotPassword() {
+    setError(null);
+    setMessage(null);
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Enter your email above first, then tap \"Forgot password\".");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email);
+      if (err) throw err;
+      setMessage("Check your email for a password reset link.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
+  return (
+    <div className="login-screen">
+      <header className="login-header">
+        <span className="login-header-k" aria-hidden="true">
+          K
+        </span>
+        <div className="login-header-brand">KOUR</div>
+        <div className="login-header-tagline">Calories · macros · weight</div>
+      </header>
+
+      <main className="login-body">
         <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="email">Email</label>
+          <div className="login-fields">
             <input
               id="email"
+              className="login-input"
               type="email"
+              autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="Email"
             />
-          </div>
-
-          {mode === "password" && (
-            <div className="field">
-              <label htmlFor="password">Password</label>
+            {mode === "password" && (
               <input
                 id="password"
+                className="login-input"
                 type="password"
+                autoComplete="current-password"
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Password"
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          {error && <p className="error-text" style={{ marginBottom: 10 }}>{error}</p>}
+          {error && (
+            <p className="error-text" style={{ marginTop: 12 }}>
+              {error}
+            </p>
+          )}
           {message && (
-            <p className="text-muted" style={{ marginBottom: 10, fontSize: 13 }}>
+            <p className="text-muted" style={{ marginTop: 12, fontSize: 13 }}>
               {message}
             </p>
           )}
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
+          <button type="submit" className="login-submit" disabled={busy}>
             {busy
-              ? "Please wait..."
+              ? "One moment…"
               : mode === "magic-link"
                 ? "Send magic link"
                 : isSignUp
                   ? "Create account"
-                  : "Sign in"}
+                  : "Continue"}
           </button>
+
+          {mode === "password" && !isSignUp && (
+            <button type="button" className="login-forgot" onClick={handleForgotPassword} disabled={busy}>
+              Forgot password
+            </button>
+          )}
         </form>
 
-        <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+        <div className="login-switch-row">
           {mode === "password" ? (
             <>
               <button className="btn-ghost btn" onClick={() => setIsSignUp((s) => !s)}>
@@ -119,7 +138,7 @@ export default function LoginScreen() {
             </button>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

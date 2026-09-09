@@ -1,4 +1,4 @@
-# biteTrack — Personal Fitness Tracker
+# KOUR — Personal Fitness Tracker
 
 Single-page food/weight tracker. React + Vite frontend, Supabase (Postgres + Auth) backend,
 deployed to Netlify. See [fitness-tracker-spec.md](fitness-tracker-spec.md) for the full spec.
