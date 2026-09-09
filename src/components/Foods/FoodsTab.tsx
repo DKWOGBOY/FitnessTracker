@@ -83,7 +83,19 @@ export default function FoodsTab() {
               <SwipeableRow key={f.id} onTap={() => setEditingFood(f)} onDelete={() => deleteFood(f.id)}>
                 <div className="list-row">
                   <div className="list-row-main">
-                    <div className="list-row-title">{f.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                      <span className="list-row-title" style={{ flex: 1, minWidth: 0 }}>
+                        {f.name}
+                      </span>
+                      {f.is_verified && (
+                        <span
+                          className="verified-badge"
+                          title="Verified: curated macros + real household portions"
+                        >
+                          <IconCheck className="icon" />
+                        </span>
+                      )}
+                    </div>
                     <div className="list-row-sub">
                       <Energy kcal={f.calories} /> /100{f.base_unit === "ml" ? "ml" : "g"} · P{" "}
                       {Math.round(f.protein_g)}g C {Math.round(f.carbs_g)}g F {Math.round(f.fat_g)}g
@@ -94,14 +106,6 @@ export default function FoodsTab() {
                           {f.sugar_g != null && `Sugar ${Math.round(f.sugar_g)}g `}
                           {f.sodium_mg != null && `Sodium ${Math.round(f.sodium_mg)}mg`}
                         </>
-                      )}
-                      {f.is_verified && (
-                        <span
-                          className="verified-badge"
-                          title="Verified: curated macros + real household portions"
-                        >
-                          <IconCheck className="icon" />
-                        </span>
                       )}
                     </div>
                   </div>

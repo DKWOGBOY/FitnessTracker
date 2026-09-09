@@ -1270,11 +1270,10 @@ textarea:focus {
   justify-content: center;
   width: 14px;
   height: 14px;
-  margin-left: 5px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: var(--color-success);
+  background: var(--color-primary);
   color: #fff;
-  vertical-align: middle;
 }
 
 .verified-badge .icon {
