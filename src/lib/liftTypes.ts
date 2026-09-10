@@ -20,4 +20,10 @@ export interface LiftSessionRow {
   duration_minutes: number | null;
   cardio_effort: number | null;
   exercises: LiftExercise[] | null;
+  /** Running-specific detail LIFT now records - all null for other cardio
+   * activities (or older sessions logged before LIFT tracked these). */
+  distance_km: number | null;
+  moving_time_minutes: number | null;
+  elapsed_time_minutes: number | null;
+  avg_heart_rate_bpm: number | null;
 }

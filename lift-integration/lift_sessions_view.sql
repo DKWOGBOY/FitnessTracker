@@ -22,6 +22,15 @@
 -- nobody can read anything (RLS enabled, no policy) or everyone can read
 -- everything (RLS disabled), and this view can't fix that on its own.
 
+-- UPDATED: LIFT now records running-specific detail (distance, moving/
+-- elapsed time, avg heart rate) on cardio sessions. The JSON key names
+-- below (distanceKm, movingTime, elapsedTime, avgHr) are a best guess
+-- following this view's existing camelCase convention (dayName, activity,
+-- duration, effort) - CONFIRM THEM against LIFT's actual session object
+-- shape and fix the `s.value ->> '...'` keys below if they differ before
+-- applying this. Units assumed: distance in km, times in minutes, heart
+-- rate in bpm - adjust the numeric conversion if LIFT stores them
+-- differently (e.g. seconds instead of minutes).
 create or replace view public.lift_sessions_for_bitetrack
 with (security_invoker = true) as
 select
@@ -33,6 +42,10 @@ select
   nullif(s.value ->> 'duration', '')::numeric as duration_minutes,
   nullif(s.value ->> 'effort', '')::numeric as cardio_effort,
   s.value -> 'exercises' as exercises,
+  nullif(s.value ->> 'distanceKm', '')::numeric as distance_km,
+  nullif(s.value ->> 'movingTime', '')::numeric as moving_time_minutes,
+  nullif(s.value ->> 'elapsedTime', '')::numeric as elapsed_time_minutes,
+  nullif(s.value ->> 'avgHr', '')::numeric as avg_heart_rate_bpm,
   lift_data.user_id
 from lift_data
 cross join lateral jsonb_array_elements(coalesce(lift_data.state -> 'sessions', '[]'::jsonb)) as s(value);
