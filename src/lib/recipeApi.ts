@@ -125,13 +125,10 @@ interface SpoonacularRecipeDetail extends SpoonacularSearchResult {
   analyzedInstructions?: { steps: { step: string }[] }[];
 }
 
-export async function getRecipeDetail(sourceId: string): Promise<{ detail: RecipeDetail; quota: QuotaInfo }> {
-  const { body, quota } = await proxyFetch(`endpoint=detail&id=${encodeURIComponent(sourceId)}`);
-  const r = body as SpoonacularRecipeDetail;
+function normalizeDetail(r: SpoonacularRecipeDetail): RecipeDetail {
   const nutrients = r.nutrition?.nutrients;
   const instructions = (r.analyzedInstructions ?? []).flatMap((group) => group.steps.map((s) => s.step));
-
-  const detail: RecipeDetail = {
+  return {
     ...normalizeSummary(r),
     fiberGPerServing: findNutrient(nutrients, "Fiber"),
     sugarGPerServing: findNutrient(nutrients, "Sugar"),
@@ -139,5 +136,51 @@ export async function getRecipeDetail(sourceId: string): Promise<{ detail: Recip
     ingredients: (r.extendedIngredients ?? []).map((i) => i.original),
     instructions,
   };
-  return { detail, quota };
+}
+
+export async function getRecipeDetail(sourceId: string): Promise<{ detail: RecipeDetail; quota: QuotaInfo }> {
+  const { body, quota } = await proxyFetch(`endpoint=detail&id=${encodeURIComponent(sourceId)}`);
+  return { detail: normalizeDetail(body as SpoonacularRecipeDetail), quota };
+}
+
+/** "Surprise me" - a single random recipe, already including nutrition and
+ * ingredients/instructions in one call (no separate detail fetch needed). */
+export async function getRandomRecipe(): Promise<{ detail: RecipeDetail; quota: QuotaInfo }> {
+  const { body, quota } = await proxyFetch("endpoint=random");
+  const recipe = (body as { recipes?: SpoonacularRecipeDetail[] }).recipes?.[0];
+  if (!recipe) throw new RecipeApiError("Couldn't find a random recipe - try again.");
+  return { detail: normalizeDetail(recipe), quota };
+}
+
+export interface SimilarRecipe {
+  sourceId: string;
+  title: string;
+  imageUrl: string | null;
+  readyInMinutes: number | null;
+  servings: number | null;
+}
+
+interface SpoonacularSimilarResult {
+  id: number;
+  title: string;
+  image?: string | null;
+  imageType?: string | null;
+  readyInMinutes?: number | null;
+  servings?: number | null;
+}
+
+/** No nutrition data on this endpoint (Spoonacular doesn't support it here)
+ * - just enough to render a card; tapping one goes through the normal
+ * getRecipeDetail fetch like any other recipe. */
+export async function getSimilarRecipes(sourceId: string): Promise<{ results: SimilarRecipe[]; quota: QuotaInfo }> {
+  const { body, quota } = await proxyFetch(`endpoint=similar&id=${encodeURIComponent(sourceId)}`);
+  const results = ((body ?? []) as SpoonacularSimilarResult[]).map((r) => ({
+    sourceId: String(r.id),
+    title: r.title,
+    // This endpoint returns just a filename, not a full URL like search/detail do.
+    imageUrl: r.image ? `https://img.spoonacular.com/recipes/${r.id}-312x231.${r.imageType ?? "jpg"}` : null,
+    readyInMinutes: r.readyInMinutes ?? null,
+    servings: r.servings ?? null,
+  }));
+  return { results, quota };
 }

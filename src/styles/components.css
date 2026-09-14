@@ -287,6 +287,233 @@ textarea:focus {
   color: #fff8f2;
 }
 
+/* Recipes tab -------------------------------------------------------- */
+
+.recipe-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.recipe-search-row .search-pill {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.filter-btn {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 13px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.filter-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-btn-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  border: 2px solid var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.recipe-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.recipe-count {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.recipe-sort {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-primary-hover);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.recipe-card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 10px;
+  cursor: pointer;
+}
+
+.recipe-thumb {
+  flex-shrink: 0;
+  width: 82px;
+  height: 82px;
+  border-radius: 12px;
+  background: var(--color-bg-alt);
+  object-fit: cover;
+  display: block;
+}
+
+.recipe-card-name {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.recipe-card-meta {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.recipe-card-tag {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--color-surface-alt);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-primary-hover);
+}
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(46, 36, 32, 0.38);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--color-bg);
+  border-radius: 22px 22px 0 0;
+  padding: 14px 20px calc(30px + env(safe-area-inset-bottom));
+  box-shadow: 0 -14px 40px rgba(46, 36, 32, 0.2);
+}
+
+.sheet-grabber {
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  margin: 0 auto 16px;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.sheet-done {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-hover);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.fits-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.fits-box {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+  border: 1.5px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fits-row.active .fits-box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.fits-box .icon {
+  width: 12px;
+  height: 12px;
+  color: #fff;
+  opacity: 0;
+}
+
+.fits-row.active .fits-box .icon {
+  opacity: 1;
+}
+
+.fits-label {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.fits-sub {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
 .weigh-in-reminder {
   display: flex;
   align-items: center;

@@ -4,7 +4,7 @@ import { useRecipes } from "../../hooks/useRecipes";
 import { useTargets } from "../../hooks/useTargets";
 import { useLogAggregates } from "../../hooks/useLogAggregates";
 import { todayStr } from "../../lib/dates";
-import { IconSearch, IconStar } from "../icons";
+import { IconCheck, IconFilter, IconSearch, IconShuffle } from "../icons";
 import Energy from "../Energy";
 import RecipeDetailModal from "./RecipeDetailModal";
 
@@ -12,7 +12,7 @@ const DIET_OPTIONS = [
   { value: "", label: "Any diet" },
   { value: "vegetarian", label: "Vegetarian" },
   { value: "vegan", label: "Vegan" },
-  { value: "gluten free", label: "Gluten free" },
+  { value: "pescetarian", label: "Pescatarian" },
   { value: "ketogenic", label: "Keto" },
   { value: "paleo", label: "Paleo" },
 ];
@@ -24,32 +24,29 @@ const CUISINE_OPTIONS = [
   "Nordic", "Southern", "Spanish", "Thai", "Vietnamese",
 ];
 
-const MEAL_TYPE_OPTIONS = [
-  { value: "main course", label: "Main course" },
-  { value: "side dish", label: "Side dish" },
-  { value: "breakfast", label: "Breakfast" },
-  { value: "soup", label: "Soup" },
-  { value: "salad", label: "Salad" },
-  { value: "appetizer", label: "Appetizer" },
-  { value: "snack", label: "Snack" },
-  { value: "dessert", label: "Dessert" },
-  { value: "beverage", label: "Beverage" },
-  { value: "bread", label: "Bread" },
-  { value: "sauce", label: "Sauce" },
+/** Spoonacular's own intolerance vocabulary has "Peanut" and "Tree Nut" as
+ * separate values with no combined "Nuts" option - one "Nuts" chip here
+ * maps to both underlying values so avoiding nuts is a single tap. */
+const INTOLERANCE_OPTIONS: { label: string; values: string[] }[] = [
+  { label: "Dairy", values: ["Dairy"] },
+  { label: "Egg", values: ["Egg"] },
+  { label: "Gluten", values: ["Gluten"] },
+  { label: "Grain", values: ["Grain"] },
+  { label: "Nuts", values: ["Peanut", "Tree Nut"] },
+  { label: "Seafood", values: ["Seafood"] },
+  { label: "Sesame", values: ["Sesame"] },
+  { label: "Shellfish", values: ["Shellfish"] },
+  { label: "Soy", values: ["Soy"] },
+  { label: "Sulfite", values: ["Sulfite"] },
+  { label: "Wheat", values: ["Wheat"] },
 ];
 
-const INTOLERANCE_OPTIONS = [
-  "Dairy", "Egg", "Gluten", "Grain", "Peanut", "Seafood", "Sesame", "Shellfish", "Soy", "Sulfite", "Tree Nut", "Wheat",
-];
-
-const SORT_OPTIONS = [
-  { value: "", label: "Relevance" },
-  { value: "popularity", label: "Popularity" },
-  { value: "healthiness", label: "Healthiness" },
-  { value: "time", label: "Time" },
-  { value: "calories", label: "Calories" },
-  { value: "protein", label: "Protein" },
-];
+interface RemainingMacros {
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
 
 export default function RecipesTab() {
   const { cached, cacheRecipe, toggleFavorite, ensureFoodForRecipe } = useRecipes();
@@ -59,17 +56,14 @@ export default function RecipesTab() {
 
   const [query, setQuery] = useState("");
   const [diet, setDiet] = useState("");
+  const [cuisine, setCuisine] = useState("");
   const [maxCalories, setMaxCalories] = useState("");
   const [maxReadyTime, setMaxReadyTime] = useState("");
-  const [fitMacros, setFitMacros] = useState(false);
-
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [cuisine, setCuisine] = useState("");
-  const [mealType, setMealType] = useState("");
-  const [intolerances, setIntolerances] = useState<Set<string>>(new Set());
   const [includeIngredients, setIncludeIngredients] = useState("");
   const [excludeIngredients, setExcludeIngredients] = useState("");
-  const [sort, setSort] = useState("");
+  const [avoid, setAvoid] = useState<Set<string>>(new Set());
+  const [fitMacros, setFitMacros] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const [results, setResults] = useState<RecipeSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,9 +72,19 @@ export default function RecipesTab() {
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
 
   const favorites = cached.filter((r) => r.is_favorite);
+  const activeFilterCount = (fitMacros ? 1 : 0) + avoid.size;
 
-  function toggleIntolerance(name: string) {
-    setIntolerances((prev) => {
+  const remaining: RemainingMacros | null = target
+    ? {
+        calories: target.calories - consumed.calories,
+        protein_g: target.protein_g - consumed.protein_g,
+        carbs_g: target.carbs_g - consumed.carbs_g,
+        fat_g: target.fat_g - consumed.fat_g,
+      }
+    : null;
+
+  function toggleAvoid(name: string) {
+    setAvoid((prev) => {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name);
       else next.add(name);
@@ -88,35 +92,31 @@ export default function RecipesTab() {
     });
   }
 
-  async function handleSearch(e?: React.FormEvent) {
-    e?.preventDefault();
+  async function runSearch() {
     setLoading(true);
     setError(null);
     try {
       const params: RecipeSearchParams = {};
       if (query.trim()) params.query = query.trim();
       if (diet) params.diet = diet;
+      if (cuisine) params.cuisine = cuisine;
       if (maxReadyTime) params.maxReadyTime = parseFloat(maxReadyTime);
       if (maxCalories) params.maxCalories = parseFloat(maxCalories);
-      if (cuisine) params.cuisine = cuisine;
-      if (mealType) params.type = mealType;
-      if (intolerances.size > 0) params.intolerances = [...intolerances].join(",");
+      if (avoid.size > 0) {
+        const values = INTOLERANCE_OPTIONS.filter((o) => avoid.has(o.label)).flatMap((o) => o.values);
+        params.intolerances = values.join(",");
+      }
       if (includeIngredients.trim()) params.includeIngredients = includeIngredients.trim();
       if (excludeIngredients.trim()) params.excludeIngredients = excludeIngredients.trim();
-      if (sort) params.sort = sort;
 
-      if (fitMacros && target) {
-        const remainingCalories = target.calories - consumed.calories;
-        const remainingProtein = target.protein_g - consumed.protein_g;
-        const remainingCarbs = target.carbs_g - consumed.carbs_g;
-        const remainingFat = target.fat_g - consumed.fat_g;
+      if (fitMacros && remaining) {
         // A soft floor on protein (not the full remaining amount) so the
         // filter doesn't demand one recipe single-handedly finish the
         // day's protein target - it should just meaningfully contribute.
-        if (remainingCalories > 0) params.maxCalories = Math.round(remainingCalories);
-        if (remainingProtein > 0) params.minProtein = Math.round(remainingProtein * 0.4);
-        if (remainingCarbs > 0) params.maxCarbs = Math.round(remainingCarbs);
-        if (remainingFat > 0) params.maxFat = Math.round(remainingFat);
+        if (remaining.calories > 0) params.maxCalories = Math.round(remaining.calories);
+        if (remaining.protein_g > 0) params.minProtein = Math.round(remaining.protein_g * 0.4);
+        if (remaining.carbs_g > 0) params.maxCarbs = Math.round(remaining.carbs_g);
+        if (remaining.fat_g > 0) params.maxFat = Math.round(remaining.fat_g);
       }
 
       const { results, quota } = await searchRecipes(params);
@@ -129,151 +129,44 @@ export default function RecipesTab() {
     }
   }
 
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    runSearch();
+  }
+
+  function handleApplyFilters() {
+    setSheetOpen(false);
+    runSearch();
+  }
+
   return (
     <div className="tab-page page-transition-in">
       <h2 style={{ marginBottom: 16 }}>Recipes</h2>
 
-      <form onSubmit={handleSearch}>
-        <div className="search-pill" style={{ marginBottom: 10 }}>
+      <form onSubmit={handleSearchSubmit} className="recipe-search-row">
+        <div className="search-pill">
           <IconSearch className="icon" />
           <input
-            type="text"
-            placeholder="Search recipes, ingredients, cuisine..."
+            type="search"
+            placeholder="Search recipes, ingredients..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-
-        <div className="field-row" style={{ marginBottom: 10 }}>
-          <div className="field">
-            <label>Diet</label>
-            <select value={diet} onChange={(e) => setDiet(e.target.value)}>
-              {DIET_OPTIONS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Max kcal</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              value={maxCalories}
-              onChange={(e) => setMaxCalories(e.target.value)}
-              placeholder="Any"
-            />
-          </div>
-          <div className="field">
-            <label>Max mins</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              value={maxReadyTime}
-              onChange={(e) => setMaxReadyTime(e.target.value)}
-              placeholder="Any"
-            />
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-ghost"
-          style={{ marginBottom: 10, paddingLeft: 0 }}
-          onClick={() => setShowMoreFilters((v) => !v)}
-        >
-          {showMoreFilters ? "Hide more filters" : "More filters"}
-        </button>
-
-        {showMoreFilters && (
-          <>
-            <div className="field-row" style={{ marginBottom: 10 }}>
-              <div className="field">
-                <label>Cuisine</label>
-                <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
-                  <option value="">Any cuisine</option>
-                  {CUISINE_OPTIONS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Meal type</label>
-                <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
-                  <option value="">Any type</option>
-                  {MEAL_TYPE_OPTIONS.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="field-row" style={{ marginBottom: 10 }}>
-              <div className="field">
-                <label>Include ingredients</label>
-                <input
-                  type="text"
-                  placeholder="e.g. chicken, rice"
-                  value={includeIngredients}
-                  onChange={(e) => setIncludeIngredients(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>Exclude ingredients</label>
-                <input
-                  type="text"
-                  placeholder="e.g. peanuts"
-                  value={excludeIngredients}
-                  onChange={(e) => setExcludeIngredients(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="field" style={{ marginBottom: 10 }}>
-              <label>Sort by</label>
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                {SORT_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field" style={{ marginBottom: 14 }}>
-              <label>Intolerances</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {INTOLERANCE_OPTIONS.map((name) => (
-                  <button
-                    type="button"
-                    key={name}
-                    onClick={() => toggleIntolerance(name)}
-                    className={intolerances.has(name) ? "range-toggle-chip active" : "range-toggle-chip"}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 13 }}>
-          <input type="checkbox" checked={fitMacros} onChange={(e) => setFitMacros(e.target.checked)} />
-          Fits my remaining macros today{!target && " (set a target in Settings first)"}
-        </label>
-
-        <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-          {loading ? "Searching..." : "Search"}
+        <button type="button" className="filter-btn" aria-label="Filters" onClick={() => setSheetOpen(true)}>
+          <IconFilter className="icon" />
+          {activeFilterCount > 0 && <span className="filter-btn-badge">{activeFilterCount}</span>}
         </button>
       </form>
+
+      <button
+        type="button"
+        className="btn btn-secondary btn-block"
+        style={{ marginTop: 10 }}
+        onClick={() => setOpenSourceId("random")}
+      >
+        <IconShuffle className="icon" /> Surprise me
+      </button>
 
       {quota && quota.left != null && (
         <p className="text-muted" style={{ fontSize: 11, textAlign: "center", marginTop: 8, marginBottom: 0 }}>
@@ -289,8 +182,10 @@ export default function RecipesTab() {
 
       {results === null && favorites.length > 0 && (
         <>
-          <div className="section-title">Favorites</div>
-          <RecipeGrid recipes={favorites.map(recipeToSummary)} onOpen={setOpenSourceId} />
+          <div className="recipe-meta-row">
+            <span className="recipe-count">Favorites</span>
+          </div>
+          <RecipeList recipes={favorites.map(recipeToSummary)} onOpen={setOpenSourceId} />
         </>
       )}
 
@@ -299,17 +194,151 @@ export default function RecipesTab() {
           <div className="spinner" />
         </div>
       ) : results !== null ? (
-        results.length === 0 ? (
-          <p className="empty-state">No recipes matched - try loosening the filters.</p>
-        ) : (
-          <>
-            <div className="section-title" style={{ marginTop: favorites.length > 0 ? 20 : 0 }}>
-              Results
+        <>
+          <div className="recipe-meta-row">
+            <span className="recipe-count">{results.length} recipe{results.length === 1 ? "" : "s"}</span>
+            <button type="button" className="recipe-sort" onClick={() => setSheetOpen(true)}>
+              Filters
+            </button>
+          </div>
+          {results.length === 0 ? (
+            <div className="empty" style={{ textAlign: "center", padding: "44px 0" }}>
+              <h3 style={{ margin: 0, fontSize: 17 }}>Nothing matches those filters</h3>
+              <p className="text-muted" style={{ marginTop: 10, fontSize: 14 }}>
+                Try clearing "Fits my remaining macros today", or widen the max kcal.
+              </p>
             </div>
-            <RecipeGrid recipes={results} onOpen={setOpenSourceId} favoriteSourceIds={new Set(favorites.map((f) => f.source_id))} />
-          </>
-        )
+          ) : (
+            <RecipeList recipes={results} onOpen={setOpenSourceId} />
+          )}
+        </>
       ) : null}
+
+      {sheetOpen && (
+        <div className="sheet-overlay" onClick={() => setSheetOpen(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-grabber" />
+            <div className="sheet-head">
+              <h2>Filters</h2>
+              <button type="button" className="sheet-done" onClick={() => setSheetOpen(false)}>
+                Done
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className={fitMacros ? "fits-row active" : "fits-row"}
+              onClick={() => setFitMacros((v) => !v)}
+            >
+              <span className="fits-box">
+                <IconCheck className="icon" />
+              </span>
+              <span style={{ flex: 1 }}>
+                <span className="fits-label" style={{ display: "block" }}>
+                  Fits my remaining macros today
+                </span>
+                <span className="fits-sub" style={{ display: "block" }}>
+                  {remaining
+                    ? `${Math.round(remaining.calories).toLocaleString()} kcal · ${Math.round(remaining.protein_g)}P · ${Math.round(remaining.carbs_g)}C · ${Math.round(remaining.fat_g)}F left`
+                    : "Set a target in Settings to use this"}
+                </span>
+              </span>
+            </button>
+
+            <div className="field-row" style={{ marginTop: 18 }}>
+              <div className="field">
+                <label>Diet</label>
+                <select value={diet} onChange={(e) => setDiet(e.target.value)}>
+                  {DIET_OPTIONS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Cuisine</label>
+                <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
+                  <option value="">Any</option>
+                  {CUISINE_OPTIONS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="field-row" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label>Max kcal</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="Any"
+                  value={maxCalories}
+                  onChange={(e) => setMaxCalories(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>Max mins</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="Any"
+                  value={maxReadyTime}
+                  onChange={(e) => setMaxReadyTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="field-row" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label>Include</label>
+                <input
+                  type="text"
+                  placeholder="e.g. chicken, rice"
+                  value={includeIngredients}
+                  onChange={(e) => setIncludeIngredients(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>Exclude</label>
+                <input
+                  type="text"
+                  placeholder="e.g. peanuts"
+                  value={excludeIngredients}
+                  onChange={(e) => setExcludeIngredients(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18 }}>
+              <div className="section-title" style={{ margin: "0 0 8px" }}>
+                Avoid
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                {INTOLERANCE_OPTIONS.map(({ label }) => (
+                  <button
+                    type="button"
+                    key={label}
+                    onClick={() => toggleAvoid(label)}
+                    className={avoid.has(label) ? "range-toggle-chip active" : "range-toggle-chip"}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn btn-primary btn-block" style={{ marginTop: 22 }} onClick={handleApplyFilters}>
+              Show recipes
+            </button>
+          </div>
+        </div>
+      )}
 
       {openSourceId && (
         <RecipeDetailModal
@@ -326,7 +355,17 @@ export default function RecipesTab() {
   );
 }
 
-function recipeToSummary(r: { source_id: string; title: string; image_url: string | null; servings: number | null; ready_in_minutes: number | null; calories_per_serving: number; protein_g_per_serving: number; carbs_g_per_serving: number; fat_g_per_serving: number }): RecipeSummary {
+function recipeToSummary(r: {
+  source_id: string;
+  title: string;
+  image_url: string | null;
+  servings: number | null;
+  ready_in_minutes: number | null;
+  calories_per_serving: number;
+  protein_g_per_serving: number;
+  carbs_g_per_serving: number;
+  fat_g_per_serving: number;
+}): RecipeSummary {
   return {
     sourceId: r.source_id,
     title: r.title,
@@ -340,56 +379,23 @@ function recipeToSummary(r: { source_id: string; title: string; image_url: strin
   };
 }
 
-function RecipeGrid({
-  recipes,
-  onOpen,
-  favoriteSourceIds,
-}: {
-  recipes: RecipeSummary[];
-  onOpen: (sourceId: string) => void;
-  favoriteSourceIds?: Set<string>;
-}) {
+function RecipeList({ recipes, onOpen }: { recipes: RecipeSummary[]; onOpen: (sourceId: string) => void }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+    <div className="recipe-list">
       {recipes.map((r) => (
-        <button
-          key={r.sourceId}
-          onClick={() => onOpen(r.sourceId)}
-          className="card"
-          style={{ padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer" }}
-        >
-          <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: "var(--color-bg-alt)" }}>
-            {r.imageUrl && (
-              <img src={r.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            )}
-            {favoriteSourceIds?.has(r.sourceId) && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  background: "rgba(0,0,0,0.45)",
-                  borderRadius: "50%",
-                  width: 22,
-                  height: 22,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                }}
-              >
-                <IconStar className="icon" filled />
-              </span>
-            )}
-          </div>
-          <div style={{ padding: 10 }}>
-            <div className="list-row-title" style={{ fontSize: 13, whiteSpace: "normal" }}>
-              {r.title}
+        <button key={r.sourceId} className="recipe-card" onClick={() => onOpen(r.sourceId)}>
+          {r.imageUrl ? (
+            <img src={r.imageUrl} alt="" className="recipe-thumb" />
+          ) : (
+            <div className="recipe-thumb" />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="recipe-card-name">{r.title}</div>
+            <div className="recipe-card-meta">
+              <Energy kcal={r.caloriesPerServing} /> · {Math.round(r.proteinGPerServing)}P /{" "}
+              {Math.round(r.carbsGPerServing)}C / {Math.round(r.fatGPerServing)}F
             </div>
-            <div className="list-row-sub" style={{ marginTop: 4 }}>
-              <Energy kcal={r.caloriesPerServing} />
-              {r.readyInMinutes ? ` · ${r.readyInMinutes} min` : ""}
-            </div>
+            {r.readyInMinutes && <span className="recipe-card-tag">{r.readyInMinutes} min</span>}
           </div>
         </button>
       ))}

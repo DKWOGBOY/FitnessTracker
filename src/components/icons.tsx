@@ -192,6 +192,22 @@ export function IconRecipe({ className }: IconProps) {
   );
 }
 
+export function IconFilter({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M4 6.5h16M7.5 12h9M11 17.5h2" />
+    </svg>
+  );
+}
+
+export function IconShuffle({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M4 6.5h3.5L15 17.5H20M15 6.5h5v5M4 17.5h3.5L10 14M20 6.5l-3.5 3.5" />
+    </svg>
+  );
+}
+
 export function IconBell({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">

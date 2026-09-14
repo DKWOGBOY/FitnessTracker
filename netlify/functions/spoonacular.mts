@@ -52,6 +52,11 @@ export default async (req: Request) => {
   } else if (endpoint === "detail") {
     const id = url.searchParams.get("id") ?? "";
     targetUrl = `${SPOONACULAR_BASE}/recipes/${encodeURIComponent(id)}/information?includeNutrition=true`;
+  } else if (endpoint === "similar") {
+    const id = url.searchParams.get("id") ?? "";
+    targetUrl = `${SPOONACULAR_BASE}/recipes/${encodeURIComponent(id)}/similar`;
+  } else if (endpoint === "random") {
+    targetUrl = `${SPOONACULAR_BASE}/recipes/random?number=1&includeNutrition=true`;
   } else {
     return new Response(JSON.stringify({ error: "Unknown endpoint." }), {
       status: 400,
