@@ -113,6 +113,12 @@ function SessionCard({
     session.day_name ?? session.cardio_activity ?? (session.session_type === "cardio" ? "Cardio" : "Strength training");
   const timeLabel = session.session_at ? format(parseISO(session.session_at), "h:mm a") : null;
   const pace = session.session_type === "cardio" ? formatPace(session) : null;
+  const cardioDurationMinutes = session.moving_time_minutes ?? session.duration_minutes;
+  const cardioSummaryParts = [
+    session.distance_km != null && `${Number.isInteger(session.distance_km) ? session.distance_km : session.distance_km.toFixed(1)} km`,
+    pace,
+    cardioDurationMinutes != null && `${Math.round(cardioDurationMinutes)}m`,
+  ].filter((part): part is string => !!part);
 
   return (
     <>
@@ -151,30 +157,11 @@ function SessionCard({
         {expanded && (
           <div className="training-items">
             {session.session_type === "cardio" ? (
-              session.distance_km != null ? (
+              cardioSummaryParts.length > 0 ? (
                 <>
                   <div className="log-row">
-                    <div className="flex-between">
-                      <span className="log-row-title">Distance</span>
-                      <span>{session.distance_km.toFixed(2)} km</span>
-                    </div>
+                    <div className="list-row-sub">{cardioSummaryParts.join(" · ")}</div>
                   </div>
-                  {pace && (
-                    <div className="log-row">
-                      <div className="flex-between">
-                        <span className="log-row-title">Avg pace</span>
-                        <span>{pace}</span>
-                      </div>
-                    </div>
-                  )}
-                  {session.moving_time_minutes != null && (
-                    <div className="log-row">
-                      <div className="flex-between">
-                        <span className="log-row-title">Moving time</span>
-                        <span>{Math.round(session.moving_time_minutes)} min</span>
-                      </div>
-                    </div>
-                  )}
                   {session.elapsed_time_minutes != null && (
                     <div className="log-row">
                       <div className="flex-between">

@@ -6,20 +6,22 @@ import LoginScreen from "./components/Auth/LoginScreen";
 import LogTab from "./components/Log/LogTab";
 import TrendsTab from "./components/Trends/TrendsTab";
 import FoodsTab from "./components/Foods/FoodsTab";
+import RecipesTab from "./components/Recipes/RecipesTab";
 import SettingsTab from "./components/Settings/SettingsTab";
 import QuickAddModal from "./components/QuickAddModal";
-import { IconLog, IconTrends, IconFoods, IconSettings, IconPlus } from "./components/icons";
+import { IconLog, IconTrends, IconFoods, IconRecipe, IconSettings, IconPlus } from "./components/icons";
 import { getStoredUnitSystem, setStoredUnitSystem, type UnitSystem } from "./lib/units";
 import { getStoredWaterTarget, setStoredWaterTarget } from "./lib/waterTarget";
 import { todayStr } from "./lib/dates";
 import type { Meal } from "./lib/types";
 
-type Tab = "log" | "trends" | "foods" | "settings";
+type Tab = "log" | "trends" | "foods" | "recipes" | "settings";
 
 const TABS: { key: Tab; label: string; Icon: (props: { className?: string }) => JSX.Element }[] = [
   { key: "log", label: "Log", Icon: IconLog },
   { key: "trends", label: "Progress", Icon: IconTrends },
   { key: "foods", label: "Foods", Icon: IconFoods },
+  { key: "recipes", label: "Recipes", Icon: IconRecipe },
   { key: "settings", label: "Settings", Icon: IconSettings },
 ];
 
@@ -62,6 +64,7 @@ function AppShell() {
         )}
         {tab === "trends" && <TrendsTab unitSystem={unitSystem} />}
         {tab === "foods" && <FoodsTab />}
+        {tab === "recipes" && <RecipesTab />}
         {tab === "settings" && (
           <SettingsTab
             unitSystem={unitSystem}

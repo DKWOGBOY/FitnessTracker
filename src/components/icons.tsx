@@ -182,6 +182,16 @@ export function IconBarcode({ className }: IconProps) {
   );
 }
 
+export function IconRecipe({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path d="M5 11a7 7 0 0 1 14 0Z" />
+      <path d="M4 11h16v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" />
+      <path d="M9 15.5 8 19M15 15.5l1 3.5M12 15.5v3.5" />
+    </svg>
+  );
+}
+
 export function IconBell({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24">

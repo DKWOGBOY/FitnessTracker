@@ -93,6 +93,32 @@ export interface ExerciseLog {
   created_at: string;
 }
 
+/** A Spoonacular recipe cached locally for the Recipes tab (browsing,
+ * favorites, detail view). `food_id` links to the loggable `foods` row
+ * (source='spoonacular') once one has been created - lazily, the first
+ * time this recipe is added to the log, not at cache time. */
+export interface Recipe {
+  id: string;
+  user_id: string;
+  source_id: string;
+  title: string;
+  image_url: string | null;
+  servings: number | null;
+  ready_in_minutes: number | null;
+  calories_per_serving: number;
+  protein_g_per_serving: number;
+  carbs_g_per_serving: number;
+  fat_g_per_serving: number;
+  fiber_g_per_serving: number | null;
+  sugar_g_per_serving: number | null;
+  sodium_mg_per_serving: number | null;
+  ingredients: string[];
+  instructions: string[];
+  is_favorite: boolean;
+  food_id: string | null;
+  cached_at: string;
+}
+
 export interface WeightLog {
   id: string;
   user_id: string;

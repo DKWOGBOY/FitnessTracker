@@ -51,5 +51,5 @@ export function formatPace(session: LiftSessionRow): string | null {
   const secondsPerKm = (minutes * 60) / session.distance_km;
   const mm = Math.floor(secondsPerKm / 60);
   const ss = Math.round(secondsPerKm % 60);
-  return `${mm}:${String(ss).padStart(2, "0")}/km`;
+  return `${mm}:${String(ss).padStart(2, "0")} /km`;
 }
