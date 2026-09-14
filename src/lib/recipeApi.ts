@@ -39,6 +39,13 @@ export interface RecipeSearchParams {
   maxFat?: number;
   minFat?: number;
   number?: number;
+  cuisine?: string;
+  type?: string;
+  /** Comma-separated - Spoonacular allows several intolerances at once. */
+  intolerances?: string;
+  includeIngredients?: string;
+  excludeIngredients?: string;
+  sort?: string;
 }
 
 interface SpoonacularNutrient {

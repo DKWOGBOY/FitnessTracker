@@ -17,6 +17,40 @@ const DIET_OPTIONS = [
   { value: "paleo", label: "Paleo" },
 ];
 
+const CUISINE_OPTIONS = [
+  "African", "American", "British", "Cajun", "Caribbean", "Chinese", "Eastern European",
+  "European", "French", "German", "Greek", "Indian", "Irish", "Italian", "Japanese",
+  "Jewish", "Korean", "Latin American", "Mediterranean", "Mexican", "Middle Eastern",
+  "Nordic", "Southern", "Spanish", "Thai", "Vietnamese",
+];
+
+const MEAL_TYPE_OPTIONS = [
+  { value: "main course", label: "Main course" },
+  { value: "side dish", label: "Side dish" },
+  { value: "breakfast", label: "Breakfast" },
+  { value: "soup", label: "Soup" },
+  { value: "salad", label: "Salad" },
+  { value: "appetizer", label: "Appetizer" },
+  { value: "snack", label: "Snack" },
+  { value: "dessert", label: "Dessert" },
+  { value: "beverage", label: "Beverage" },
+  { value: "bread", label: "Bread" },
+  { value: "sauce", label: "Sauce" },
+];
+
+const INTOLERANCE_OPTIONS = [
+  "Dairy", "Egg", "Gluten", "Grain", "Peanut", "Seafood", "Sesame", "Shellfish", "Soy", "Sulfite", "Tree Nut", "Wheat",
+];
+
+const SORT_OPTIONS = [
+  { value: "", label: "Relevance" },
+  { value: "popularity", label: "Popularity" },
+  { value: "healthiness", label: "Healthiness" },
+  { value: "time", label: "Time" },
+  { value: "calories", label: "Calories" },
+  { value: "protein", label: "Protein" },
+];
+
 export default function RecipesTab() {
   const { cached, cacheRecipe, toggleFavorite, ensureFoodForRecipe } = useRecipes();
   const { targetForDate } = useTargets();
@@ -29,6 +63,14 @@ export default function RecipesTab() {
   const [maxReadyTime, setMaxReadyTime] = useState("");
   const [fitMacros, setFitMacros] = useState(false);
 
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [cuisine, setCuisine] = useState("");
+  const [mealType, setMealType] = useState("");
+  const [intolerances, setIntolerances] = useState<Set<string>>(new Set());
+  const [includeIngredients, setIncludeIngredients] = useState("");
+  const [excludeIngredients, setExcludeIngredients] = useState("");
+  const [sort, setSort] = useState("");
+
   const [results, setResults] = useState<RecipeSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +78,15 @@ export default function RecipesTab() {
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
 
   const favorites = cached.filter((r) => r.is_favorite);
+
+  function toggleIntolerance(name: string) {
+    setIntolerances((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
 
   async function handleSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -47,6 +98,12 @@ export default function RecipesTab() {
       if (diet) params.diet = diet;
       if (maxReadyTime) params.maxReadyTime = parseFloat(maxReadyTime);
       if (maxCalories) params.maxCalories = parseFloat(maxCalories);
+      if (cuisine) params.cuisine = cuisine;
+      if (mealType) params.type = mealType;
+      if (intolerances.size > 0) params.intolerances = [...intolerances].join(",");
+      if (includeIngredients.trim()) params.includeIngredients = includeIngredients.trim();
+      if (excludeIngredients.trim()) params.excludeIngredients = excludeIngredients.trim();
+      if (sort) params.sort = sort;
 
       if (fitMacros && target) {
         const remainingCalories = target.calories - consumed.calories;
@@ -121,6 +178,92 @@ export default function RecipesTab() {
             />
           </div>
         </div>
+
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ marginBottom: 10, paddingLeft: 0 }}
+          onClick={() => setShowMoreFilters((v) => !v)}
+        >
+          {showMoreFilters ? "Hide more filters" : "More filters"}
+        </button>
+
+        {showMoreFilters && (
+          <>
+            <div className="field-row" style={{ marginBottom: 10 }}>
+              <div className="field">
+                <label>Cuisine</label>
+                <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
+                  <option value="">Any cuisine</option>
+                  {CUISINE_OPTIONS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Meal type</label>
+                <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
+                  <option value="">Any type</option>
+                  {MEAL_TYPE_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="field-row" style={{ marginBottom: 10 }}>
+              <div className="field">
+                <label>Include ingredients</label>
+                <input
+                  type="text"
+                  placeholder="e.g. chicken, rice"
+                  value={includeIngredients}
+                  onChange={(e) => setIncludeIngredients(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>Exclude ingredients</label>
+                <input
+                  type="text"
+                  placeholder="e.g. peanuts"
+                  value={excludeIngredients}
+                  onChange={(e) => setExcludeIngredients(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="field" style={{ marginBottom: 10 }}>
+              <label>Sort by</label>
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                {SORT_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field" style={{ marginBottom: 14 }}>
+              <label>Intolerances</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {INTOLERANCE_OPTIONS.map((name) => (
+                  <button
+                    type="button"
+                    key={name}
+                    onClick={() => toggleIntolerance(name)}
+                    className={intolerances.has(name) ? "range-toggle-chip active" : "range-toggle-chip"}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 13 }}>
           <input type="checkbox" checked={fitMacros} onChange={(e) => setFitMacros(e.target.checked)} />

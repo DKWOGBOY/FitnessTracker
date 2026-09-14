@@ -38,6 +38,12 @@ export default async (req: Request) => {
       "maxCarbs",
       "minFat",
       "maxFat",
+      "cuisine",
+      "type",
+      "intolerances",
+      "includeIngredients",
+      "excludeIngredients",
+      "sort",
     ]) {
       const value = url.searchParams.get(key);
       if (value) params.set(key, value);
